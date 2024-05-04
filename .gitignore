@@ -1,0 +1,7 @@
+bin
+obj
+test
+dumped
+test_dumped
+.vscode
+HashCache.json

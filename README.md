@@ -13,7 +13,14 @@ LEVEL5 modding on Switch made easy!
 * No overhead on the user side. To use Viola generated mods, the end user DOES NOT have to install any mod loader, it simply works out of the box on both emulator and real hardware. *Note: When merging mods, a copy of Viola will be required.*
 
 
-Big thanks to Tinifan for letting me use his CfgBin logic, and big thanks to Light for testing this tool extensively!
+Big thanks to Tinifan for letting me use his CfgBin logic, big thanks to Light for testing this tool extensively and a big thanks to onepiecefreak3 for teaching me about the CfgBin structure and standing me after so many dumb mistakes I made!
+
+## How it works
+There are 3 modes: pack, merge and dump.
+
+Dump extracts every CPK in your RomFS and make the structure clean and easy to mod. It can also generate a HashCache file, which is used to identify modded files
+
+Pack packs your modified dumped RomFS into a loose mod folder. It can detect and pack only the modified files using a **HashCache**. A HashCache can be generated in dump mode along with your dump by doing `Viola.exe dump --cache <folder>`. A YKW4 HashCache comes preinstalled.
 
 ## Usage
 ```

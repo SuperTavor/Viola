@@ -6,10 +6,10 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 //using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using CfgBinEditor.Tools;
-using CfgBinEditor.Level5.Binary.Logic;
+using Tinifan.Tools;
+using Tinifan.Level5.Binary.Logic;
 
-namespace CfgBinEditor.Level5.Binary
+namespace Tinifan.Level5.Binary
 {
     public class CfgBin
     {

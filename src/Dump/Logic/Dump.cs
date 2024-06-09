@@ -1,36 +1,26 @@
-using Viola.CLI;
+using Viola.CLINS;
 using Viola.Utils;
 using CriFsV2Lib;
-using Viola.HashCache;
+using Viola.HashCacheNS;
 using CriFsV2Lib.Definitions.Structs;
-namespace Viola.Dump;
-class CDump
+namespace Viola.DumpNS;
+class Dump
 {
-    private string _folderPath { get; set; }
-    private bool _cache { get; set; }
+    private string _dirToDump = string.Empty;
 
     public static string DumpFolder = "dumped";
 
-    private CParsedArguments _options;
+    private ParsedArguments _options;
 
-    public CDump(CParsedArguments options)
+    public Dump(ParsedArguments options)
     {
         _options = options;
     }
-    public void Dump()
+    public void DumpRomfs()
     {
-
-        int specBase = 0;
-        if (_options.AdditionalArgs[0] == "--cache")
-        {
-            _cache = true;
-            specBase++;
-            Console.WriteLine("CACHING ENABLED!!! Big slowdowns ahead\n\n\n");
-        }
-
-        _folderPath = _options.AdditionalArgs[specBase];
-        DumpFolder = _options.AdditionalArgs[specBase + 1];
-        var folderFiles = GeneralUtils.GetAllFiles(_folderPath);
+        _dirToDump = _options.InputPath;
+        DumpFolder = _options.OutputPath;
+        var folderFiles = GeneralUtils.GetAllFilesWithNormalSlash(_dirToDump);
         var cpkPaths = new List<string>();
         var filesToCopy = new List<string>();
         foreach (var file in folderFiles)
@@ -51,27 +41,19 @@ class CDump
             {
                 using var extractedFile = reader.ExtractFile(file);
                 var filePath = $"{DumpFolder}/{file.Directory}/{file.FileName}";
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
                 File.WriteAllBytes(filePath, extractedFile.Span.ToArray());
             }
         }
         foreach (var file in filesToCopy)
         {
-            var destFile = $"{DumpFolder}/{file.Substring(_folderPath.Length + 1)}";
+            var destFile = $"{DumpFolder}/{file.Substring(_dirToDump.Length + 1)}";
             Console.WriteLine($"Copying already loose file: {Path.GetFileName(file)}");
             var destDir = Path.GetDirectoryName(destFile);
-            Directory.CreateDirectory(destDir);
+            Directory.CreateDirectory(destDir!);
             File.Copy(file, destFile, true);
         }
         Console.WriteLine($"Done cleaning. You can find your dumped RomFS in `{DumpFolder}/'");
-        if (_cache)
-        {
-            CHashCache cache = new CHashCache();
-            cache.CreateJson();
-            File.WriteAllText(CHashCache.HASHCACHE_FILE, cache.HashCacheJson);
-            Console.WriteLine("Finished creating cache.");
-        }
-
     }
 
 

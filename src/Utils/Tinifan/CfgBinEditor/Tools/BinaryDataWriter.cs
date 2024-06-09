@@ -3,7 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace CfgBinEditor.Tools
+namespace Tinifan.Tools
 {
     public class BinaryDataWriter : IDisposable
     {

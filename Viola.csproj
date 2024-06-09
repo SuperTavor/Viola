@@ -5,10 +5,10 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ArgsReading" Version="2.3.2" />
     <PackageReference Include="CriFsV2Lib" Version="2.1.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.IO.Hashing" Version="8.0.0" />

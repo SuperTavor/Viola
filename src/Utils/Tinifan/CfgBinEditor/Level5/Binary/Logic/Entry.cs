@@ -5,9 +5,9 @@ using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using CfgBinEditor.Tools;
+using Tinifan.Tools;
 
-namespace CfgBinEditor.Level5.Binary.Logic
+namespace Tinifan.Level5.Binary.Logic
 {
     public class Entry
     {
@@ -364,7 +364,8 @@ namespace CfgBinEditor.Level5.Binary.Logic
                                     if (stringsTable.ContainsKey(valueString))
                                     {
                                         writer.Write(stringsTable[valueString]);
-                                    } else
+                                    }
+                                    else
                                     {
                                         writer.Write(-1);
                                     }
@@ -500,7 +501,7 @@ namespace CfgBinEditor.Level5.Binary.Logic
 
         public void ReplaceString(string oldString, string newString)
         {
-            foreach(Variable variable in Variables.Where(x => x.Type == Logic.Type.String)) 
+            foreach (Variable variable in Variables.Where(x => x.Type == Logic.Type.String))
             {
                 if (Convert.ToString(variable.Value) == oldString)
                 {
@@ -524,7 +525,8 @@ namespace CfgBinEditor.Level5.Binary.Logic
                     if (variable.Name != null && (variable.Name.ToLower() == match || variable.Name.ToLower().StartsWith(match)))
                     {
                         return true;
-                    } else
+                    }
+                    else
                     {
                         if (variable.Type == Logic.Type.String)
                         {

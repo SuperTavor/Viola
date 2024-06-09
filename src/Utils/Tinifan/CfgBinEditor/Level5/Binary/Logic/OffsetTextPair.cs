@@ -1,4 +1,4 @@
-﻿namespace CfgBinEditor.Level5.Binary.Logic
+﻿namespace Tinifan.Level5.Binary.Logic
 {
     public class OffsetTextPair
     {

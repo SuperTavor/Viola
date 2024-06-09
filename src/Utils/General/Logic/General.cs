@@ -3,19 +3,14 @@ using System.Text;
 namespace Viola.Utils;
 class GeneralUtils
 {
-    public static List<string> GetAllFiles(string folderPath)
+    public const string APP_VERSION = "1.0.1";
+    public static List<string> GetAllFilesWithNormalSlash(string folderPath)
     {
         List<string> filePaths = new List<string>();
-        foreach (string filePath in Directory.GetFiles(folderPath))
+        foreach(var f in Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories))
         {
-
-            filePaths.Add(filePath.Replace("\\", "/"));
+            filePaths.Add(f.Replace("\\", "/"));
         }
-        foreach (string subdirectory in Directory.GetDirectories(folderPath))
-        {
-            filePaths.AddRange(GetAllFiles(subdirectory));
-        }
-
         return filePaths;
     }
 
@@ -27,6 +22,7 @@ class GeneralUtils
         return hash;
     }
 
+    //str overload
     public static uint ComputeCRC32(string data)
     {
         var crc32 = new Crc32();
@@ -34,4 +30,5 @@ class GeneralUtils
         var hash = crc32.GetCurrentHashAsUInt32();
         return hash;
     }
+
 }

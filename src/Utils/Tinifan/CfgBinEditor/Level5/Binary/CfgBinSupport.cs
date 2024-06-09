@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace CfgBinEditor.Level5.Binary
+namespace Tinifan.Level5.Binary
 {
     public class CfgBinSupport
     {

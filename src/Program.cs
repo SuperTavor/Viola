@@ -1,18 +1,16 @@
-﻿using Viola.CLI;
-using Viola.Launcher;
+﻿using Viola.CLINS;
+using Viola.NSLauncher;
 namespace Viola;
 using System.Text;
-
 class Program
 {
     static void Main(string[] args)
     {
-        //register SHIFT-JIS
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-        CCLI cliManager = new CCLI(args);
-        var pArgs = cliManager.ParseArguments();
-        CLauncher launcher = new CLauncher(pArgs);
+        CLI cliManager = new CLI(args);
+        var parsedArguments = cliManager.ParseArguments();
+        Launcher launcher = new Launcher(parsedArguments);
         launcher.Launch();
     }
 }

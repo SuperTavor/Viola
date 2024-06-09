@@ -16,21 +16,12 @@ LEVEL5 modding on Switch made easy!
 Big thanks to Tinifan for letting me use his CfgBin logic, big thanks to Light for testing this tool extensively and a big thanks to onepiecefreak3 for teaching me about the CfgBin structure and standing me after so many dumb mistakes I made!
 
 ## How it works
-There are 3 modes: pack, merge and dump.
+There are 4 modes: pack, merge, dump and cache
 
 Dump extracts every CPK in your RomFS and make the structure clean and easy to mod. It can also generate a HashCache file, which is used to identify modded files
 
-Pack packs your modified dumped RomFS into a loose mod folder. It can detect and pack only the modified files using a **HashCache**. A HashCache can be generated in dump mode along with your dump by doing `Viola.exe dump --cache <folder>`. A YKW4 HashCache comes preinstalled.
+Pack packs your modified dumped RomFS into a loose mod folder. It can detect and pack only the modified files using a **HashCache**. 
 
-## Usage
-```
-Viola.exe <mode> <additional_arguments>\
+Cache can generate a HashCache. 
 
-Modes:
-
-* pack - packs a dumped mod folder. Example: `Viola.exe pack MyModFolder'
-
-* merge - Merges multiple dumped mod folders. Example: `Viola.exe merge MyFirstMod MySecondMod`
-
-* dump - Dumps a specified RomFS into a Cpk-less directory structure. You can specify `--cache` before your folder name to create a HashCache. Example without creating hashcache: 'Viola.exe dump MyRomfs MyDumpedRomFs'. Example with creating a hashcache: `Viola.exe dump --cache MyRomfs MyDumpedRomfs'
-```
+Merge can merge multiple packed mods together, so they can be packed and then used alongside each other without any conflicts

@@ -3,7 +3,7 @@ using System.Text;
 namespace Viola.Utils;
 class GeneralUtils
 {
-    public const string APP_VERSION = "1.0.1";
+    public const string APP_VERSION = "1.1.0";
     public static List<string> GetAllFilesWithNormalSlash(string folderPath)
     {
         List<string> filePaths = new List<string>();

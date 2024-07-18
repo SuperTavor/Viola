@@ -1,7 +1,7 @@
 using Viola.CLINS;
 using Viola.Utils;
 using CriFsV2Lib;
-using Viola.HashCacheNS;
+using System.Text;
 using CriFsV2Lib.Definitions.Structs;
 namespace Viola.DumpNS;
 class Dump
@@ -34,8 +34,17 @@ class Dump
         foreach (var cpk in cpkPaths)
         {
             Console.WriteLine($"Extracting {cpk}");
-            using var filestream = new FileStream(cpk, FileMode.Open);
-            using var reader = new CriFsLib().CreateCpkReader(filestream, true);
+            var mem = new MemoryStream(File.ReadAllBytes(cpk));
+            byte[] magicBuf = new byte[4];
+            mem.Read(magicBuf, 0, 4);
+            mem.Position = 0;
+            if (Encoding.UTF8.GetString(magicBuf) != "CPK ")
+            {
+                //Try decrypting it.
+                var decryptor = new CPKDecryptor(mem);
+                mem = decryptor.DecryptFile();                
+            } 
+            using var reader = new CriFsLib().CreateCpkReader(mem, true);
             var files = reader.GetFiles();
             foreach (CpkFile file in files)
             {
@@ -44,6 +53,7 @@ class Dump
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
                 File.WriteAllBytes(filePath, extractedFile.Span.ToArray());
             }
+            mem.Close();
         }
         foreach (var file in filesToCopy)
         {

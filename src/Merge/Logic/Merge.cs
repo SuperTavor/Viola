@@ -29,6 +29,6 @@ class Merge
             }
             Console.WriteLine($"Added {folder} to merge pool.");
         }
-        Console.WriteLine($"\nFinished merging all your mods into {_mergeDestination}/.\nTo pack them, simply run 'Viola.exe pack \"{_mergeDestination}\"'");
+        Console.WriteLine($"\nFinished merging all your mods into {_mergeDestination}/.\nTo pack them, simply run 'Viola.exe -m pack -i \"{_mergeDestination}\" -o \"{_mergeDestination}_packed\"'");
     }
 }

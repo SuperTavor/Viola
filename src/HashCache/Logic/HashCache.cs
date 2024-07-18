@@ -17,7 +17,7 @@ namespace Viola.HashCacheNS
             }
             else
             {
-                _hashCachePath= Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "HashCache.bin"); 
+                _hashCachePath= Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "HashCache.bin"); 
             }
             _dumpedRomfsPath = dumpedRomfsPath;
             if(mode == eHashCacheMode.Load)

@@ -6,5 +6,4 @@ class ParsedArguments
     public string OutputPath = string.Empty;
     public List<string> StuffToMerge = new();
     public string Alias =string.Empty;
-    public bool DecryptCPKs;
 }

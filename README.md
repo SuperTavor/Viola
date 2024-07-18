@@ -1,5 +1,5 @@
 # Viola 💜
-LEVEL5 modding on Switch made easy!
+Modern LEVEL5 modding made easy!
 
 ## Key features
 * A fantastic dev experience: Viola can generate a clean, CPKless RomFS that's as easy to edit as any game that doesn't use CPKs, then compile it into a highly efficient loose mod folder with only the files you need! It's super easy to use, and it eliminates the need to worry for CPKs at all! You won't be encountering them at all while using Viola.

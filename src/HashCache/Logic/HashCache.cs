@@ -8,12 +8,16 @@ namespace Viola.HashCacheNS
 
         private HashCacheStructure _hashCacheContent = new HashCacheStructure();
         private string _dumpedRomfsPath;
-        private string _hashCachePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),"HashCache.bin");
+        private string _hashCachePath;
         public HashCache(string dumpedRomfsPath, eHashCacheMode mode,string currentHashCachePath = "")
         {
             if(currentHashCachePath!="")
             {
                 _hashCachePath = currentHashCachePath;
+            }
+            else
+            {
+                _hashCachePath= Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "HashCache.bin"); 
             }
             _dumpedRomfsPath = dumpedRomfsPath;
             if(mode == eHashCacheMode.Load)

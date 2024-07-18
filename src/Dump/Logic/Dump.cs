@@ -57,7 +57,7 @@ class Dump
         }
         foreach (var file in filesToCopy)
         {
-            var destFile = $"{DumpFolder}/{file.Substring(_dirToDump.Length + 1)}";
+            var destFile = $"{DumpFolder}/{file.Substring(_dirToDump.Length)}";
             Console.WriteLine($"Copying already loose file: {Path.GetFileName(file)}");
             var destDir = Path.GetDirectoryName(destFile);
             Directory.CreateDirectory(destDir!);

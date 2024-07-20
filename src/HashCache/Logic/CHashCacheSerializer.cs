@@ -1,16 +1,17 @@
 ﻿
 using System.Text;
+using Viola.src.HashCache.DataClasses;
 
-namespace Viola.HashCacheNS
+namespace Viola.src.HashCache.Logic
 {
-    public class HashCacheSerializer
+    public class CHashCacheSerializer
     {
         public static byte[] Serialize(HashCacheStructure structure)
         {
             using var memoryStream = new MemoryStream();
-            using var writer =new BinaryWriter(memoryStream);
+            using var writer = new BinaryWriter(memoryStream);
             writer.Write(structure.Hashes.Count);
-            foreach(var kvp in structure.Hashes)
+            foreach (var kvp in structure.Hashes)
             {
                 writer.Write(kvp.Key);
                 writer.Write(kvp.Value);

@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="ArgsReading" Version="2.3.2" />
     <PackageReference Include="CriFsV2Lib" Version="2.1.2" />
+    <PackageReference Include="GtkSharp" Version="3.24.24.95" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />

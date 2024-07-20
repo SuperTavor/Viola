@@ -1,18 +1,19 @@
-using Viola.CLINS;
-using Viola.Utils;
 using CriFsV2Lib;
 using System.Text;
 using CriFsV2Lib.Definitions.Structs;
-namespace Viola.DumpNS;
-class Dump
+using Viola.src.Launcher.DataClasses;
+using Viola.src.Utils.General.Logic;
+using Viola.src.EncryptDecrypt.Logic.Utils;
+namespace Viola.src.Dump.Logic;
+class CDump
 {
     private string _dirToDump = string.Empty;
 
     public static string DumpFolder = "dumped";
 
-    private ParsedArguments _options;
+    private CLaunchOptions _options;
 
-    public Dump(ParsedArguments options)
+    public CDump(CLaunchOptions options)
     {
         _options = options;
     }
@@ -20,7 +21,7 @@ class Dump
     {
         _dirToDump = _options.InputPath;
         DumpFolder = _options.OutputPath;
-        var folderFiles = GeneralUtils.GetAllFilesWithNormalSlash(_dirToDump);
+        var folderFiles = CGeneralUtils.GetAllFilesWithNormalSlash(_dirToDump);
         var cpkPaths = new List<string>();
         var filesToCopy = new List<string>();
         foreach (var file in folderFiles)
@@ -40,10 +41,10 @@ class Dump
             mem.Position = 0;
             if (Encoding.UTF8.GetString(magicBuf) != "CPK ")
             {
-                //Try decrypting it.
-                var decryptor = new CPKDecryptor(mem);
-                mem = decryptor.DecryptFile();                
-            } 
+                //Try decrypting it in case it uses the new Criware crypt introduced in MEGATON MUSASHI W: WIRED for PC.
+                var decryptor = new CCriwareCrypt(mem, CriwareCryptMode.Decrypt, Encoding.UTF8.GetBytes("CPK "));
+                mem = decryptor.DecryptFile();
+            }
             using var reader = new CriFsLib().CreateCpkReader(mem, true);
             var files = reader.GetFiles();
             foreach (CpkFile file in files)

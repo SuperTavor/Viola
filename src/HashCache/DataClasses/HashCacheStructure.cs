@@ -1,6 +1,10 @@
-namespace Viola.HashCacheNS;
+namespace Viola.src.HashCache.DataClasses;
 
-public class HashCacheStructure
+public struct HashCacheStructure
 {
-    public Dictionary<string, uint> Hashes { get; set; } = new Dictionary<string, uint>();
+    public Dictionary<string, uint> Hashes;
+    public HashCacheStructure()
+    {
+        Hashes=new Dictionary<string, uint>();
+    }
 }

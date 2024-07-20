@@ -1,15 +1,16 @@
-using Viola.CLINS;
 using Tinifan.Level5.Binary;
 using Tinifan.Level5.Binary.Logic;
-using Viola.Utils;
-using Viola.HashCacheNS;
+using Viola.src.Launcher.DataClasses;
+using Viola.src.HashCache.DataClasses;
+using Viola.src.HashCache.Logic;
+using Viola.src.Utils.General.Logic;
 
-namespace Viola.PackNS;
-class Pack
+namespace Viola.src.Pack.Logic;
+class CPack
 {
-    private ParsedArguments _options { get; set; }
+    private CLaunchOptions _options { get; set; }
     private string _dirToPack = string.Empty;
-    public Pack(ParsedArguments options)
+    public CPack(CLaunchOptions options)
     {
         _options = options;
         _dirToPack = _options.InputPath!.Replace("\\", "/");
@@ -22,7 +23,7 @@ class Pack
 
     List<string> CollectModPaths()
     {
-        return GeneralUtils.GetAllFilesWithNormalSlash(_dirToPack);
+        return CGeneralUtils.GetAllFilesWithNormalSlash(_dirToPack);
     }
 
     public void PackMod()
@@ -30,7 +31,7 @@ class Pack
         var recFilesInPackDir = CollectModPaths();
         if (!CheckForCpkList(recFilesInPackDir))
         {
-            throw new FileNotFoundException($"Can't find cpk_list in the default location ({_dirToPack}/data/cpk_list.cfg.bin). ");
+            throw new FileNotFoundException($"Can't find cpk_list.cfg.bin in the default location ({_dirToPack}/data/cpk_list.cfg.bin). ");
         }
         var cpkListPath = recFilesInPackDir[recFilesInPackDir.IndexOf($"{_dirToPack}/data/cpk_list.cfg.bin")];
         byte[] cpklistBytes = File.ReadAllBytes(cpkListPath);
@@ -40,23 +41,23 @@ class Pack
         List<Entry> cpkItems = cpkList.Entries[0].Children;
         //Get all files already registered in the cpklist.
         HashSet<string> alreadyRegisteredFiles = new HashSet<string>();
-        foreach(var cpkItem in cpkItems)
+        foreach (var cpkItem in cpkItems)
         {
             //Add fileName field from each entry.
             alreadyRegisteredFiles.Add(_dirToPack + "/" + (string)cpkItem.Variables[0].Value);
         }
         //store all the filenames of changed files so we can copy later
         HashSet<string> modifiedOrAddedFiles = [];
-        HashCache hashCache = new HashCache(_dirToPack,eHashCacheMode.Load);
+        CHashCache hashCache = new CHashCache(_dirToPack, HashCacheMode.Load);
         for (int i = 0; i < cpkItems.Count; i++)
         {
             var fileNameInCfgBin = (string)cpkItems[i].Variables[0].Value;
             //This should create a full path of the file specified in the enbtry
             var modfile = $"{_dirToPack}/{fileNameInCfgBin}";
-        
+
             if (File.Exists(modfile))
             {
-                if (hashCache.GetRomfsFileHash(fileNameInCfgBin) != GeneralUtils.ComputeCRC32(File.ReadAllBytes(modfile)))
+                if (hashCache.GetRomfsFileHash(fileNameInCfgBin) != CGeneralUtils.ComputeCRC32(File.ReadAllBytes(modfile)))
                 {
                     Console.WriteLine($"[modified file] {fileNameInCfgBin}");
                     //make the file loose
@@ -65,26 +66,26 @@ class Pack
                     cpkItems[i].Variables[2].Value = (int)new FileInfo(modfile).Length;
                     modifiedOrAddedFiles.Add(modfile);
                 }
-                
+
             }
 
         }
-        foreach(var file in recFilesInPackDir)
+        foreach (var file in recFilesInPackDir)
         {
-            if(!alreadyRegisteredFiles.Contains(file) && file != $"{_dirToPack}/data/cpk_list.cfg.bin" && File.Exists(file))
+            if (!alreadyRegisteredFiles.Contains(file) && file != $"{_dirToPack}/data/cpk_list.cfg.bin" && File.Exists(file))
             {
-                var relativePath = Path.GetRelativePath(_dirToPack, file).Replace("\\","/");
+                var relativePath = Path.GetRelativePath(_dirToPack, file).Replace("\\", "/");
                 Console.WriteLine($"[new file] {relativePath}");
                 modifiedOrAddedFiles.Add(file);
                 //dupe the last entry and fill in our values
                 var newEntry = cpkItems.Last().Clone();
-                newEntry.Variables[0].Value = Path.GetRelativePath(_dirToPack, file).Replace("\\","/");
+                newEntry.Variables[0].Value = Path.GetRelativePath(_dirToPack, file).Replace("\\", "/");
                 newEntry.Variables[1].Value = string.Empty;
                 newEntry.Variables[2].Value = (int)new FileInfo(file).Length;
                 cpkItems.Add(newEntry);
             }
         }
-        var outputModFolder =_options.OutputPath;
+        var outputModFolder = _options.OutputPath;
         //create path to the mod output folder, unless it already exists.
         Directory.CreateDirectory(outputModFolder);
         //Set updated entry count if files were added
@@ -97,7 +98,7 @@ class Pack
 
         foreach (var file in modifiedOrAddedFiles)
         {
-            var destFilePath = $"{outputModFolder}/{Path.GetRelativePath(_dirToPack,file)}";
+            var destFilePath = $"{outputModFolder}/{Path.GetRelativePath(_dirToPack, file)}";
             Directory.CreateDirectory(Path.GetDirectoryName(destFilePath)!);
             File.Copy(file, destFilePath, true);
         }

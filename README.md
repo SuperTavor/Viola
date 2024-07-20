@@ -1,27 +1,68 @@
 # Viola 💜
 Modern LEVEL5 modding made easy!
 
-## Key features
-* A fantastic dev experience: Viola can generate a clean, CPKless RomFS that's as easy to edit as any game that doesn't use CPKs, then compile it into a highly efficient loose mod folder with only the files you need! It's super easy to use, and it eliminates the need to worry for CPKs at all! You won't be encountering them at all while using Viola.
+## What is Viola?
+Viola is an all-in-one tool to manage, create, and modern LEVEL5 games. You see, these newer LEVEL5 games all use various CPK files to store the game's files, and they keep track of which file is in which CPK in the cpk_list.cfg.bin file, along with their sizes.
 
-* Easier multi-mod support: You can merge as many mod folders as you'd like with a robust priority system.
+## Why is Viola even needed?
+Viola can dump these pesky, CPK-filled filesystems into clean and coherent filesystems, and instead of distributing the entire CPK you are editing every time you want to release a mod - You can pack your mod with Viola and only distribute the files you edited - no CPKS involved!
 
-* EXTREMELY SMALL MOD BINARIES! After compiling with Viola, your mods will be about **70%** smaller on average, as they don't require you to ship the full CPKs you are editing, only the files you actually edited.
-
-* Backwards compatibility: You can dump your CPK mods, then pack them with Viola, so you don't need to do any work on your own!
-
-* No overhead on the user side. To use Viola generated mods, the end user DOES NOT have to install any mod loader, it simply works out of the box on both emulator and real hardware. *Note: When merging mods, a copy of Viola will be required.*
+## How can I play multiple mods at the same time?
+Before Viola - you couldn't, if the mods edited the same CPK, but with Viola, it's no longer an issue - simply merge your mods using Viola's merge function.
 
 
-Big thanks to Tinifan for letting me use his CfgBin logic, big thanks to Light for testing this tool extensively and a big thanks to onepiecefreak3 for teaching me about the CfgBin structure and standing me after so many dumb mistakes I made!
+## Alright, how do I even use Viola?
+Viola can be used both as a GUI and as a CLI. To run the GUI version, simply run `viola gui` in the command line or double click the included `.bat` file.
+This guide works for both the GUI and CLI versions.
 
-## How it works
-There are 4 modes: pack, merge, dump and cache
+Viola has many features, so let's go over them:
 
-Dump extracts every CPK in your RomFS and make the structure clean and easy to mod. It can also generate a HashCache file, which is used to identify modded files
+### Dumping
+Dumping can clean up a messy filesystem riddled with CPKs into a nice and clean filesystem.
 
-Pack packs your modified dumped RomFS into a loose mod folder. It can detect and pack only the modified files using a **HashCache**. 
+**on the CLI**: `viola -m dump -i <Path to the folder you want to dump> -o <Where you want to put your dumped output>`
 
-Cache can generate a HashCache. 
+**On the GUI:** Select the dump option.
 
-Merge can merge multiple packed mods together, so they can be packed and then used alongside each other without any conflicts
+### Packing
+
+Packing can pack your modded dumped filesystem into a tiny mod folder only containing the files you edited.
+*Note: to speed up packing speeds, try deleting the files you are not editing from your dump.*
+
+**Make sure you have a HashCache file called HashCache.bin for your game residing next to Viola's EXE. You can get some premade HashCaches [here](https://github.com/SuperTavor/Viola/tree/main/HashCache%20library), or you can create one yourself with the `cache` function (explained later in the guide)**
+
+**on the CLI**: `viola -m pack -i <Modded dump to pack> -o <Where you want to put your packed output>`
+
+**on the GUI**: Select the pack option.
+
+
+### Merging
+the merge function can merge multiple Viola-packed mods into 1 mod you can simply play!
+
+**NOTE: You need to pack this function's output using the pack function before playing**
+
+**on the CLI**: `viola -m merge <FirstModToBeMerged> <SecondModToBeMerged> <ThirdModToBeMerged> <Etc..> -o <Where you want to put your merged output>`
+
+**on the GUI**: Select the merge option and follow the steps on screen.
+
+### Caching
+the cache function can be used to create a HashCache file. a HashCache file is a file that tells Viola how the unmodified files of a game are structured, and thus Viola can infer if they're modified or not. 
+
+**on the CLI**: `viola -m cache -i <PathToTheUnmodifiedDumpedGameFiles> -o <Where you want to put your HashCache>`
+
+**on the GUI**: Select the cache option and follow the steps on screen.
+
+### Decrypting
+This function can decrypt files encrypted with LEVEL5's new encryption scheme for Criware formats.
+
+**on the CLI**: `viola -m decrypt -i <File to decrypt> -o <Where you want to put your decrypted output>`
+
+**on the GUI**: Select the decrypt option and follow the steps on screen.
+
+### Encrypting
+This function can encrypt files encrypted with LEVEL5's new encryption scheme for Criware formats.
+**NOTE: To re-encrypt files, you need the key gotten from decrypting them with the decrypt function.**
+
+**on the CLI**: `viola -m encrypt -i <File to encrypt> -o <Where you want to put your encrypted output> -key <your key>`
+
+**on the GUI**: Select the encrypt option and follow the steps on screen.

@@ -65,6 +65,7 @@ class CDump
             File.Copy(file, destFile, true);
         }
         Console.WriteLine($"Done cleaning. You can find your dumped RomFS in `{DumpFolder}/'");
+
     }
 
 

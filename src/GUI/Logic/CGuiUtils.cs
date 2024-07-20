@@ -17,7 +17,6 @@ namespace Viola.src.GUI.Logic
             md.Destroy();
         }
 
-
         public static string ChooseFolder(Window window,string windowTitle)
         {
             FileChooserDialog fc = new(

@@ -29,7 +29,9 @@ class CLauncher
     public void Launch()
     {
         _modeFuncs[_options.Mode]();
-        Console.WriteLine("Finished.");
+        Console.WriteLine("Finished. Press any key to exit.");
+        Console.ReadKey();
+
     }
 
     public async Task LaunchAsync()

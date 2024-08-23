@@ -156,7 +156,7 @@ You'll now be prompted to select all the mods you want to merge, in order of mos
 
 After selecting your mods, you'll be asked to select an output folder to put your merged mod in. 
 
-Now, you'll be asked to select your vanilla cpk_list file. You can learn how to get that [here](https://github.com/SuperTavor/Viola?tab=readme-ov-file#backing-up-your-cpk_list).
+Now, you'll be asked to select your vanilla cpk_list file. You can learn how to get that [here](https://github.com/SuperTavor/Viola?tab=readme-ov-file#2-backing-up-your-cpk_list).
 
 After that, you'll have to select your target platform. Please do so.
 
@@ -169,4 +169,4 @@ If you see this, it means all went well!
 
 ![img](https://i.imgur.com/bPHa3M1.png)
 
-**Congrats! You've just merged your mods. You can install your mod using [this]() part of the guide.**
+**Congrats! You've just merged your mods. You can install your mod using [this](https://github.com/SuperTavor/Viola?tab=readme-ov-file#2-backing-up-your-cpk_list) part of the guide.**

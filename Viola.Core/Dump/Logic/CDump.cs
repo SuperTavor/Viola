@@ -36,28 +36,31 @@ class CDump
         foreach (var cpk in cpkPaths)
         {
             CLogger.LogInfo($"Extracting {cpk}\n");
-            var mem = new MemoryStream(File.ReadAllBytes(cpk));
+            using var stream = GetBestStreamForFile(cpk);
+            
             byte[] magicBuf = new byte[4];
-            mem.Read(magicBuf, 0, 4);
-            mem.Position = 0;
+            stream.Read(magicBuf, 0, 4);
+            stream.Position = 0;
+            
             if (Encoding.UTF8.GetString(magicBuf) != "CPK ")
             {
-
-                //Try decrypting it in case it uses the new Criware crypt introduced in MEGATON MUSASHI W: WIRED for PC.
                 try
                 {
-                    var decryptor = new CCriwareCrypt(mem, CriwareCryptMode.Decrypt, Encoding.UTF8.GetBytes("CPK "));
+                    var decryptor = new CCriwareCrypt(stream, CriwareCryptMode.Decrypt, Encoding.UTF8.GetBytes("CPK "));
                     decryptor.DecryptFile();
+                    stream.Position = 0;
                 }
-                catch(FormatException)
+                catch (FormatException)
                 {
                     CLogger.AddImportantInfo("Invalid or corrupted CPK: " + cpk + ".\nPlease delete it or replace it with a valid CPK.");
                     CLogger.AddImportantInfo("Operation cancelled due to error.");
                     return;
                 }
             }
-            using var reader = new CriFsLib().CreateCpkReader(mem, true);
+            
+            using var reader = new CriFsLib().CreateCpkReader(stream, true);
             var files = reader.GetFiles();
+            
             foreach (CpkFile file in files)
             {
                 using var extractedFile = reader.ExtractFile(file);
@@ -65,7 +68,6 @@ class CDump
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
                 File.WriteAllBytes(filePath, extractedFile.Span.ToArray());
             }
-            mem.Close();
         }
         foreach (var file in filesToCopy)
         {

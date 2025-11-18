@@ -34,7 +34,7 @@ public class CGeneralUtils
         return hash;
     }
 
-    public static Stream GetAppropiateStream(string path)
+    public static Stream GetAppropriateStream(string path)
     {
         long length = new FileInfo(path).Length;
     

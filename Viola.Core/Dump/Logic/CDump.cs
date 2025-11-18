@@ -5,6 +5,7 @@ using Viola.Core.Launcher.DataClasses;
 using Viola.Core.Utils.General.Logic;
 using Viola.Core.EncryptDecrypt.Logic.Utils;
 using Viola.Core.ViolaLogger.Logic;
+
 namespace Viola.Core.Dump.Logic;
 class CDump
 {
@@ -36,12 +37,12 @@ class CDump
         foreach (var cpk in cpkPaths)
         {
             CLogger.LogInfo($"Extracting {cpk}\n");
-            using var stream = GetAppropriateStream(cpk);
-            
+            using var stream = CGeneralUtils.GetAppropriateStream(cpk);
+
             byte[] magicBuf = new byte[4];
             stream.Read(magicBuf, 0, 4);
             stream.Position = 0;
-            
+
             if (Encoding.UTF8.GetString(magicBuf) != "CPK ")
             {
                 try
@@ -57,10 +58,10 @@ class CDump
                     return;
                 }
             }
-            
+
             using var reader = new CriFsLib().CreateCpkReader(stream, true);
             var files = reader.GetFiles();
-            
+
             foreach (CpkFile file in files)
             {
                 using var extractedFile = reader.ExtractFile(file);

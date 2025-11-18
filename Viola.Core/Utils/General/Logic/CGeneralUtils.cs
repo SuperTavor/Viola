@@ -37,10 +37,10 @@ public class CGeneralUtils
     public static Stream GetAppropriateStream(string path)
     {
         long length = new FileInfo(path).Length;
-    
+
         const long twoGBThreshold = (long)2 * 1024 * 1024 * 1024;
-    
-        if (length < TwoGB)
+
+        if (length < twoGBThreshold)
         {
             return new MemoryStream(File.ReadAllBytes(path));
         }

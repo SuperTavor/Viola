@@ -1,5 +1,7 @@
+using System.IO;
 using System.IO.Hashing;
 using System.Text;
+
 namespace Viola.Core.Utils.General.Logic;
 public class CGeneralUtils
 {
@@ -30,6 +32,20 @@ public class CGeneralUtils
         crc32.Append(Encoding.UTF8.GetBytes(data));
         var hash = crc32.GetCurrentHashAsUInt32();
         return hash;
+    }
+
+    public static Stream GetAppropiateStream(string path)
+    {
+        long length = new FileInfo(path).Length;
+    
+        const long twoGBThreshold = (long)2 * 1024 * 1024 * 1024;
+    
+        if (length < TwoGB)
+        {
+            return new MemoryStream(File.ReadAllBytes(path));
+        }
+
+        return new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
     }
 
 }

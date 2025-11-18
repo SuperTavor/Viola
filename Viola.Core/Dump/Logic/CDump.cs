@@ -36,7 +36,7 @@ class CDump
         foreach (var cpk in cpkPaths)
         {
             CLogger.LogInfo($"Extracting {cpk}\n");
-            using var stream = GetBestStreamForFile(cpk);
+            using var stream = GetAppropriateStream(cpk);
             
             byte[] magicBuf = new byte[4];
             stream.Read(magicBuf, 0, 4);

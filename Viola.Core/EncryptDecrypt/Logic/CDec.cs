@@ -32,7 +32,7 @@ namespace Viola.Core.EncryptDecrypt.Logic
                     CCriwareCrypt.ProcessStream(fsIn, fsOut, key);
                 }
                 
-                CLogger.LogInfo($"Finished decrypting to {_outputPath}");
+                CLogger.LogInfo($"Finished decrypting to `{_outputPath.Replace("\\", "/")}`");
             }
             catch (Exception ex)
             {

@@ -22,7 +22,7 @@ namespace Viola.WinForms.Forms.MainForm
             this.Text = $"Viola {CGeneralUtils.APP_VERSION} (GUI)";
             //to display all logs to the gui console
             CLogger.GuiLogInfoEvent += GuiLog;
-            
+
         }
         private List<EventHandler> _oldButtonClicks = [];
         //Simulates the button being disables because the default disabled look is ugly as shit
@@ -79,7 +79,7 @@ namespace Viola.WinForms.Forms.MainForm
             var platformDialog = new ChoosePackPlatformForm();
             platformDialog.ShowDialog();
             Platform plat = 0;
-            if(platformDialog.DialogResult == DialogResult.OK)
+            if (platformDialog.DialogResult == DialogResult.OK)
             {
                 plat = platformDialog.Output;
             }
@@ -89,10 +89,10 @@ namespace Viola.WinForms.Forms.MainForm
                 SensitiveAllBtns(false);
                 return;
             }
-            await CommonMode(Mode.Pack, false, "Select folder to pack", "Select folder to put the packed mod in", file,"",plat,true);
+            await CommonMode(Mode.Pack, false, "Select folder to pack", "Select folder to put the packed mod in", file, "", plat, true);
         }
 
-        private async Task CommonMode(Mode mode, bool saveFile, string inputFileMessage, string outputFileMessage, string specificCpkListPath = "",string saveFileFilter="",Platform targetPlat = 0,bool isUseTargetPlat = false)
+        private async Task CommonMode(Mode mode, bool saveFile, string inputFileMessage, string outputFileMessage, string specificCpkListPath = "", string saveFileFilter = "", Platform targetPlat = 0, bool isUseTargetPlat = false)
         {
             if (_buttonsDisabled)
             {
@@ -100,7 +100,7 @@ namespace Viola.WinForms.Forms.MainForm
             }
             SensitiveAllBtns(true);
             var options = new CLaunchOptions();
-            if(isUseTargetPlat) options.PackPlatform = targetPlat;
+            if (isUseTargetPlat) options.PackPlatform = targetPlat;
             options.Mode = mode;
             var inputDir = CGuiUtils.ChooseFolder(inputFileMessage);
             if (inputDir == string.Empty)
@@ -112,7 +112,7 @@ namespace Viola.WinForms.Forms.MainForm
             string outputDir = "";
             if (saveFile)
             {
-                outputDir = CGuiUtils.SaveFile(outputFileMessage,saveFileFilter);
+                outputDir = CGuiUtils.SaveFile(outputFileMessage, saveFileFilter);
             }
             else outputDir = CGuiUtils.ChooseFolder(outputFileMessage);
 
@@ -207,7 +207,7 @@ namespace Viola.WinForms.Forms.MainForm
                     return;
                 }
                 options.OutputPath = packOutputPath;
-                
+
                 string cpkLIstPath = CGuiUtils.ChooseExistingFile("Choose an external cpk_list file", "cfgbin file|*.bin");
                 if (cpkLIstPath == null)
                 {
@@ -248,35 +248,30 @@ namespace Viola.WinForms.Forms.MainForm
 
             var options = new CLaunchOptions();
             options.Mode = Mode.Encrypt;
-            var key = Interaction.InputBox("Please enter an encryption key.", "Viola");
-            try
-            {
-                options.Key = uint.Parse(key.Trim());
-            }
-            catch
-            {
-                MessageBox.Show("Please enter a valid uint as the key.");
-                SensitiveAllBtns(false);
-                return;
-            }
+            MessageBox.Show("Note: The encryption key is calculated based on the filename of the input file. Make sure the filename is correct before encrypting.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
             var fileToEncrypt = CGuiUtils.ChooseExistingFile("Please choose the file you wish to encrypt.", "All files|*.*");
-            if (fileToEncrypt == null)
+            if (fileToEncrypt == null || fileToEncrypt == "")
             {
                 MessageBox.Show("Operation cancelled by user.");
                 SensitiveAllBtns(false);
                 return;
             }
+
             var savePath = CGuiUtils.SaveFile("Please choose the path where you want to save the encrypted file to.", "All files|*.*");
-            if (savePath == null)
+            if (savePath == null || savePath == "")
             {
                 MessageBox.Show("Operation cancelled by user.");
                 SensitiveAllBtns(false);
                 return;
             }
+
             options.InputPath = fileToEncrypt;
             options.OutputPath = savePath;
+
             var launcher = new CLauncher(options);
             await launcher.LaunchAsync();
+
             CLogger.InvokeImportantInfos();
             SensitiveAllBtns(false);
         }
@@ -286,14 +281,14 @@ namespace Viola.WinForms.Forms.MainForm
             SensitiveAllBtns(true);
             var options = new CLaunchOptions();
             options.Mode = Mode.Decrypt;
-            var fileToDecrypt = CGuiUtils.ChooseExistingFile("Choose the file you want to decrypt","All files|*.*");
+            var fileToDecrypt = CGuiUtils.ChooseExistingFile("Choose the file you want to decrypt", "All files|*.*");
             if (fileToDecrypt == "")
             {
                 MessageBox.Show("Operation cancelled");
                 SensitiveAllBtns(false);
                 return;
             }
-            var destiniation = CGuiUtils.SaveFile("Choose where you want to save the decrypted output to.","All files|*.*");
+            var destiniation = CGuiUtils.SaveFile("Choose where you want to save the decrypted output to.", "All files|*.*");
             if (destiniation == "")
             {
                 MessageBox.Show("Operation cancelled");

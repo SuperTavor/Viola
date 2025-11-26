@@ -6,25 +6,38 @@ namespace Viola.Core.EncryptDecrypt.Logic
 {
     public class CEnc
     {
-        private MemoryStream _ms;
-        private uint _key;
         private string _outputPath;
+        private string _inputPath;
+
         public CEnc(CLaunchOptions options)
         {
-            _outputPath=options.OutputPath;
-            _ms = new(File.ReadAllBytes(options.InputPath));
-            _key = options.Key;
+            _inputPath = options.InputPath;
+            _outputPath = options.OutputPath;
         }
 
         public void Encrypt()
         {
-            CLogger.LogInfo("Started encryption\n");
-            var cryptor = new CCriwareCrypt(_ms,CriwareCryptMode.Encrypt, null, _key);
-            cryptor.EncryptFile();
-            //Write file
-            File.WriteAllBytes(_outputPath, _ms.ToArray());
-            _ms.Close();
-            CLogger.LogInfo("Encrypted succussfully.");
+            var filename = Path.GetFileName(_inputPath);
+
+            // Calculate Key based on filename
+            uint key = CCriwareCrypt.CalculateFilenameKey(filename);
+
+            CLogger.LogInfo($"Started encryption using Key: {key:X8}");
+
+            try
+            {
+                using (var fsIn = new FileStream(_inputPath, FileMode.Open, FileAccess.Read))
+                using (var fsOut = new FileStream(_outputPath, FileMode.Create, FileAccess.Write))
+                {
+                    CCriwareCrypt.ProcessStream(fsIn, fsOut, key);
+                }
+
+                CLogger.LogInfo("Encrypted successfully.");
+            }
+            catch (Exception ex)
+            {
+                CLogger.AddImportantInfo($"Encryption Error: {ex.Message}");
+            }
         }
     }
 }

@@ -2,106 +2,127 @@ using System.Text;
 
 namespace Viola.Core.EncryptDecrypt.Logic.Utils;
 
-public class CCriwareCrypt
+public static class CCriwareCrypt
 {
-    public byte[]? Key;
-    private Stream _ms;
-    private byte[] _originalMagic;
+    private static uint[]? _crc32Table;
 
-    // Key specification is only required when encrypting.
-    public CCriwareCrypt(Stream ms, CriwareCryptMode mode, byte[]? originalMagic = null, uint? key = null)
+    // Standard CRC32 Polynomial: 0xEDB88320
+    private static void InitializeTable()
     {
-        _ms = ms;
-
-        if (mode == CriwareCryptMode.Decrypt)
+        if (_crc32Table != null) return;
+        _crc32Table = new uint[256];
+        uint polynomial = 0xEDB88320;
+        for (uint i = 0; i < 256; i++)
         {
-            if (originalMagic == null)
+            uint crc = i;
+            for (uint j = 8; j > 0; j--)
             {
-                throw new ArgumentException("Please specify the original magic when decrypting using the CriwareCrypt class.");
+                if ((crc & 1) == 1) crc = (crc >> 1) ^ polynomial;
+                else crc >>= 1;
+            }
+            _crc32Table[i] = crc;
+        }
+    }
+
+    /// <summary>
+    /// Calculates the decryption key based on the filename.
+    /// </summary>
+    public static uint CalculateFilenameKey(string filename)
+    {
+        InitializeTable();
+        
+        // Game uses Standard Seed 0xFFFFFFFF
+        uint crc = 0xFFFFFFFF; 
+        
+        byte[] bytes = Encoding.UTF8.GetBytes(filename);
+        
+        foreach (byte b in bytes)
+        {
+            byte index = (byte)((crc ^ b) & 0xFF);
+            crc = (crc >> 8) ^ _crc32Table![index];
+        }
+        
+        return ~crc; 
+    }
+
+    /// <summary>
+    /// Core decryption logic for a byte array.
+    /// </summary>
+    public static void DecryptBlock(byte[] buffer, long fileOffset, uint key)
+    {
+        InitializeTable();
+
+        byte[] KEY = BitConverter.GetBytes(key);
+        
+        // Initialize Rolling CRC State using the Offset (Salt)
+        uint currentCrc = UpdateCrcState((uint)(fileOffset & -4), KEY);
+
+        for (int i = 0; i < buffer.Length; i++)
+        {
+            long globalPos = i + fileOffset;
+            
+            if ((globalPos & 3) == 0) 
+            {
+                currentCrc = UpdateCrcState((uint)globalPos, KEY);
+            }
+
+            // Bit Scrambler Logic
+            int baseShift = (int)(globalPos & 3) * 2; 
+
+            uint r8 = (currentCrc >> (baseShift + 8)) & 3;
+            uint rdx = (currentCrc >> baseShift) & 0xFF; 
+            uint mask = (rdx << 2) & 0xFF; 
+            r8 |= mask;
+
+            rdx = (currentCrc >> (baseShift + 16)) & 3;
+            mask = (r8 << 2) & 0xFF; 
+            r8 = mask | rdx;
+
+            rdx = (currentCrc >> (baseShift + 24)) & 3;
+            mask = (r8 << 2) & 0xFF; 
+            r8 = mask | rdx;
+
+            buffer[i] ^= (byte)r8;
+        }
+    }
+
+    /// <summary>
+    /// Helper to stream data from Input to Output while decrypting.
+    /// </summary>
+    public static void ProcessStream(Stream input, Stream output, uint key)
+    {
+        byte[] buffer = new byte[1024 * 1024]; // 1MB Chunk
+        int bytesRead;
+        long totalRead = 0;
+
+        while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            if (bytesRead < buffer.Length)
+            {
+                byte[] partial = new byte[bytesRead];
+                Array.Copy(buffer, partial, bytesRead);
+                DecryptBlock(partial, totalRead, key);
+                output.Write(partial, 0, bytesRead);
             }
             else
             {
-                _originalMagic = originalMagic;
+                DecryptBlock(buffer, totalRead, key);
+                output.Write(buffer, 0, bytesRead);
             }
-            GenerateKeyFromFileHeader();
-        }
-        else if (mode == CriwareCryptMode.Encrypt)
-        {
-            if (key == null)
-            {
-                throw new ArgumentException("Please specify the key when encrypting using the CriwareCrypt class.");
-            }
-            else
-            {
-                Key = BitConverter.GetBytes(key.Value);
-            }
+            
+            totalRead += bytesRead;
         }
     }
 
-    public void GenerateKeyFromFileHeader()
+    private static uint UpdateCrcState(uint seed, byte[] keys)
     {
-        byte[] headerBytes = new byte[4];
-
-        if (_ms.CanSeek)
-            _ms.Position = 0;
-
-        _ms.Read(headerBytes, 0, 4);
-
-        // XOR header bytes with the magic to get the key
-        Key = new byte[4];
-        for (int i = 0; i < _originalMagic.Length; i++)
+        uint crc = ~seed;
+        for(int k=0; k<4; k++)
         {
-            Key[i] = (byte)(_originalMagic[i] ^ headerBytes[i]);
+            byte index = (byte)(crc & 0xFF);
+            index ^= keys[k];
+            crc = (crc >> 8) ^ _crc32Table![index];
         }
-
-        if (_ms.CanSeek)
-            _ms.Position = 0;
-    }
-
-    public void DecryptFile()
-    {
-        byte[] data = _ms is MemoryStream memStream ? memStream.ToArray() : ReadStreamToByteArray(_ms);
-
-        for (int i = 0; i < data.Length; i++)
-        {
-            data[i] ^= Key![i % Key.Length];
-        }
-
-        if (!data.Take(4).ToArray().SequenceEqual(_originalMagic))
-        {
-            throw new FormatException("File does not match the specified format");
-        }
-
-        _ms.Position = 0;
-        _ms.Write(data, 0, data.Length);
-        _ms.SetLength(data.Length);
-        _ms.Position = 0;
-    }
-
-    public void EncryptFile()
-    {
-        byte[] data = _ms is MemoryStream memStream ? memStream.ToArray() : ReadStreamToByteArray(_ms);
-
-        for (int i = 0; i < data.Length; i++)
-        {
-            data[i] ^= Key![i % Key.Length];
-        }
-
-        _ms.Position = 0;
-        _ms.Write(data, 0, data.Length);
-        _ms.SetLength(data.Length);
-        _ms.Position = 0;
-    }
-
-    private static byte[] ReadStreamToByteArray(Stream stream)
-    {
-        if (stream is MemoryStream ms)
-            return ms.ToArray();
-
-        using var temp = new MemoryStream();
-        if (stream.CanSeek)
-            stream.Position = 0;
-        stream.CopyTo(temp);
-        return temp.ToArray();
+        return ~crc;
     }
 }

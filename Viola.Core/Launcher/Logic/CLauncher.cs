@@ -3,7 +3,6 @@ using Viola.Core.Launcher.DataClasses;
 using Viola.Core.Merge.Logic;
 using Viola.Core.Pack.Logic;
 using Viola.Core.EncryptDecrypt.Logic;
-using Viola.Core.Utils.General.Logic;
 using Viola.Core.ViolaLogger.Logic;
 namespace Viola.Core.Launcher.Logic;
 
@@ -28,13 +27,15 @@ public class CLauncher
     public void Launch()
     {
         _modeFuncs[_options.Mode]();
-        CLogger.LogInfo("Finished\n");
+        CLogger.InvokeImportantInfos();
+        CLogger.LogInfo("Finished");
     }
 
     public async Task LaunchAsync()
     {
         await Task.Run(() => _modeFuncs[_options.Mode]());
-        CLogger.LogInfo("Finished\n");
+        CLogger.InvokeImportantInfos();
+        CLogger.LogInfo("Finished");
     }
 
     void BeginPack()

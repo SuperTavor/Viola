@@ -139,6 +139,6 @@ class CDump
             Directory.CreateDirectory(destDir!);
             File.Copy(file, destFile, true);
         }
-        CLogger.LogInfo($"Done. Dumped to `{DumpFolder}/`");
+        CLogger.LogInfo($"Done. Dumped to `{DumpFolder.Replace("\\", "/")}`");
     }
 }

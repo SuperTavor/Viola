@@ -5,7 +5,7 @@ using System.Text;
 namespace Viola.Core.Utils.General.Logic;
 public class CGeneralUtils
 {
-    public const string APP_VERSION = "1.4.1";
+    public const string APP_VERSION = "1.4.2";
     public static bool isConsole = true;
     public static event Action<long, long, string>? OnProgress;
 
@@ -47,7 +47,7 @@ public class CGeneralUtils
             return new MemoryStream(File.ReadAllBytes(path));
         }
 
-        return new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+        return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
     }
 
     public static Stream CreateAppropriateStream(string path, long estimatedSize)

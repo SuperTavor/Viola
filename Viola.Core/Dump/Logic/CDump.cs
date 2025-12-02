@@ -7,6 +7,8 @@ using Viola.Core.EncryptDecrypt.Logic.Utils;
 using Viola.Core.ViolaLogger.Logic;
 using Viola.Core.Settings.Logic;
 using Tinifan.Level5.Binary;
+using System.Runtime;
+
 namespace Viola.Core.Dump.Logic;
 
 class CDump
@@ -48,15 +50,29 @@ class CDump
         }
 
         CLogger.LogInfo($"Found {totalCpks} CPK(s) to dump.");
-        for (int i = 0; i < totalCpks; i++)
-        {
-            ProcessCpk(cpkPaths[i], i, totalCpks);
-        }
-
-        CopyLooseFiles(filesToCopy, settings.SmartDump);
         
-        CGeneralUtils.ReportProgress(0, 0, "");
-        CLogger.LogInfo($"Done. Dumped to `{DumpFolder.Replace("\\", "/")}`");
+        try
+        {
+            for (int i = 0; i < totalCpks; i++)
+            {
+                ProcessCpk(cpkPaths[i], i, totalCpks);
+            }
+
+            CopyLooseFiles(filesToCopy, settings.SmartDump);
+            
+            CGeneralUtils.ReportProgress(0, 0, "");
+            CLogger.LogInfo($"Done. Dumped to `{DumpFolder.Replace("\\", "/")}`");
+        }
+        finally
+        {
+            _smartDumpSizes = null;
+            _cpkContents = null;
+
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
     }
 
     private void LoadSmartDumpData()
@@ -307,19 +323,23 @@ class CDump
     {
         using var reader = new CriFsLib().CreateCpkReader(stream, true);
         var files = reader.GetFiles().ToArray();
-        int totalFiles = files.Length;
-        long totalBytes = 0;
-        foreach (var f in files) totalBytes += f.FileSize;
-        long currentBytes = 0;
+        
+        long totalEstimatedBytes = 0;
+        foreach (var f in files) totalEstimatedBytes += f.FileSize;
+        if (totalEstimatedBytes == 0) totalEstimatedBytes = 1; // Avoid divide by zero
+
+        double currentProgressBase = 0;
         long lastUpdateTick = 0;
 
-        // Optimization: Cache created directories to avoid redundant IO calls
         HashSet<string> createdDirs = [];
 
-        CGeneralUtils.ReportProgress(0, totalBytes, "Extracting");
+        CGeneralUtils.ReportProgress(0, 10000, "Extracting");
 
         foreach (CpkFile file in files)
         {
+            long fileSize = file.FileSize;
+            double fileWeight = (double)fileSize / totalEstimatedBytes;
+
             if (_smartDumpSizes != null)
             {
                 string relativePath = string.IsNullOrEmpty(file.Directory)
@@ -334,7 +354,15 @@ class CDump
                         long currentSize = new FileInfo(checkPath).Length;
                         if (currentSize == expectedSize)
                         {
-                            currentBytes += file.FileSize;
+                            // Skip file but advance progress
+                            currentProgressBase += fileWeight;
+                            // Report progress occasionally even when skipping to keep UI responsive
+                            long now = DateTime.Now.Ticks;
+                            if (now - lastUpdateTick > 500000)
+                            {
+                                CGeneralUtils.ReportProgress((long)(currentProgressBase * 10000), 10000, "Extracting");
+                                lastUpdateTick = now;
+                            }
                             continue;
                         }
                     }
@@ -344,7 +372,6 @@ class CDump
             using var extractedFile = reader.ExtractFile(file);
             var filePath = $"{DumpFolder}/{file.Directory}/{file.FileName}";
             
-            // Optimization: Only create directory if we haven't seen it yet
             string dirPath = Path.GetDirectoryName(filePath)!;
             if (createdDirs.Add(dirPath))
             {
@@ -355,22 +382,40 @@ class CDump
             using var outFs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024);
             
             var span = extractedFile.Span;
+            long currentFileBytes = 0;
             int chunkSize = 5 * 1024 * 1024; // 5MB chunks
-            for (int j = 0; j < span.Length; j += chunkSize)
+            
+            if (span.Length > 0)
             {
-                int size = Math.Min(chunkSize, span.Length - j);
-                outFs.Write(span.Slice(j, size));
-                currentBytes += size;
-
-                long now = DateTime.Now.Ticks;
-                if (now - lastUpdateTick > 500000) // 50ms
+                for (int j = 0; j < span.Length; j += chunkSize)
                 {
-                    CGeneralUtils.ReportProgress(currentBytes, totalBytes, "Extracting");
-                    lastUpdateTick = now;
+                    int size = Math.Min(chunkSize, span.Length - j);
+                    outFs.Write(span.Slice(j, size));
+                    currentFileBytes += size;
+
+                    long now = DateTime.Now.Ticks;
+                    if (now - lastUpdateTick > 500000) // 50ms
+                    {
+                        double fileRatio = (fileSize > 0) ? ((double)currentFileBytes / fileSize) : 1.0;
+                        if (fileRatio > 1.0) fileRatio = 1.0;
+
+                        double globalProgress = currentProgressBase + (fileWeight * fileRatio);
+                        CGeneralUtils.ReportProgress((long)(globalProgress * 10000), 10000, "Extracting");
+                        lastUpdateTick = now;
+                    }
                 }
             }
+            
+            currentProgressBase += fileWeight;
+            
+            long endNow = DateTime.Now.Ticks;
+            if (endNow - lastUpdateTick > 500000)
+            {
+                 CGeneralUtils.ReportProgress((long)(currentProgressBase * 10000), 10000, "Extracting");
+                 lastUpdateTick = endNow;
+            }
         }
-        CGeneralUtils.ReportProgress(totalBytes, totalBytes, "Extracting");
+        CGeneralUtils.ReportProgress(10000, 10000, "Extracting");
     }
 
     private void CopyLooseFiles(List<string> filesToCopy, bool smartDump)

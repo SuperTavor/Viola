@@ -34,7 +34,10 @@
             dumpBtn = new Button();
             consoleRichTextBox = new RichTextBox();
             encryptBtn = new Button();
+            settingsBtn = new Button();
             quickStartLinkLabel = new LinkLabel();
+            progressBar = new ProgressBar();
+            statusLabel = new Label();
             SuspendLayout();
             // 
             // packBtn
@@ -53,7 +56,7 @@
             // 
             decryptBtn.BackColor = SystemColors.Info;
             decryptBtn.Font = new Font("Yu Gothic UI Semibold", 12F, FontStyle.Bold);
-            decryptBtn.Location = new Point(375, 313);
+            decryptBtn.Location = new Point(298, 313);
             decryptBtn.Name = "decryptBtn";
             decryptBtn.Size = new Size(154, 86);
             decryptBtn.TabIndex = 1;
@@ -92,21 +95,51 @@
             consoleRichTextBox.Location = new Point(12, 12);
             consoleRichTextBox.Name = "consoleRichTextBox";
             consoleRichTextBox.ReadOnly = true;
-            consoleRichTextBox.Size = new Size(742, 207);
+            consoleRichTextBox.Size = new Size(742, 175);
             consoleRichTextBox.TabIndex = 4;
             consoleRichTextBox.Text = "Viola Console\n";
+            // 
+            // progressBar
+            // 
+            progressBar.Location = new Point(12, 205);
+            progressBar.Name = "progressBar";
+            progressBar.Size = new Size(742, 15);
+            progressBar.TabIndex = 9;
+            // 
+            // statusLabel
+            // 
+            statusLabel.AutoSize = true;
+            statusLabel.BackColor = Color.Transparent;
+            statusLabel.Font = new Font("Yu Gothic UI", 9F, FontStyle.Bold);
+            statusLabel.ForeColor = Color.White;
+            statusLabel.Location = new Point(12, 188);
+            statusLabel.Name = "statusLabel";
+            statusLabel.Size = new Size(0, 15);
+            statusLabel.TabIndex = 10;
             // 
             // encryptBtn
             // 
             encryptBtn.BackColor = SystemColors.Info;
             encryptBtn.Font = new Font("Yu Gothic UI Semibold", 12F, FontStyle.Bold);
-            encryptBtn.Location = new Point(215, 313);
+            encryptBtn.Location = new Point(138, 313);
             encryptBtn.Name = "encryptBtn";
             encryptBtn.Size = new Size(154, 86);
             encryptBtn.TabIndex = 6;
             encryptBtn.Text = "Encrypt Criware";
             encryptBtn.UseVisualStyleBackColor = false;
             encryptBtn.Click += encryptBtn_Click;
+            // 
+            // settingsBtn
+            // 
+            settingsBtn.BackColor = SystemColors.Info;
+            settingsBtn.Font = new Font("Yu Gothic UI Semibold", 12F, FontStyle.Bold);
+            settingsBtn.Location = new Point(458, 313);
+            settingsBtn.Name = "settingsBtn";
+            settingsBtn.Size = new Size(154, 86);
+            settingsBtn.TabIndex = 8;
+            settingsBtn.Text = "Settings";
+            settingsBtn.UseVisualStyleBackColor = false;
+            settingsBtn.Click += settingsBtn_Click;
             // 
             // quickStartLinkLabel
             // 
@@ -128,7 +161,10 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.GrayText;
             ClientSize = new Size(766, 433);
+            Controls.Add(statusLabel);
+            Controls.Add(progressBar);
             Controls.Add(quickStartLinkLabel);
+            Controls.Add(settingsBtn);
             Controls.Add(encryptBtn);
             Controls.Add(consoleRichTextBox);
             Controls.Add(dumpBtn);
@@ -149,6 +185,9 @@
         private Button dumpBtn;
         private RichTextBox consoleRichTextBox;
         private Button encryptBtn;
+        private Button settingsBtn;
         private LinkLabel quickStartLinkLabel;
+        private ProgressBar progressBar;
+        private Label statusLabel;
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Viola.Core.EncryptDecrypt.Logic.Utils;
 using Viola.Core.Launcher.DataClasses;
 using Viola.Core.ViolaLogger.Logic;
+using Viola.Core.Utils.General.Logic;
 
 namespace Viola.Core.EncryptDecrypt.Logic
 {
@@ -29,7 +30,17 @@ namespace Viola.Core.EncryptDecrypt.Logic
                 using (var fsIn = new FileStream(_inputPath, FileMode.Open, FileAccess.Read))
                 using (var fsOut = new FileStream(_outputPath, FileMode.Create, FileAccess.Write))
                 {
-                    CCriwareCrypt.ProcessStream(fsIn, fsOut, key);
+                    long lastUpdateTick = 0;
+                    CCriwareCrypt.ProcessStream(fsIn, fsOut, key, (curr, tot) =>
+                    {
+                        long now = DateTime.Now.Ticks;
+                        if (now - lastUpdateTick > 500000) // 50ms throttle
+                        {
+                            CGeneralUtils.ReportProgress(curr, tot, "Encrypting");
+                            lastUpdateTick = now;
+                        }
+                    });
+                    CGeneralUtils.ReportProgress(100, 100, "Encrypting");
                 }
 
                 CLogger.LogInfo("Encrypted successfully.");
@@ -38,6 +49,7 @@ namespace Viola.Core.EncryptDecrypt.Logic
             {
                 CLogger.AddImportantInfo($"Encryption Error: {ex.Message}");
             }
+            CGeneralUtils.ReportProgress(0, 0, "");
         }
     }
 }

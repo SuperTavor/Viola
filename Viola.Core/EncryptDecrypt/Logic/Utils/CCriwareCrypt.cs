@@ -89,11 +89,12 @@ public static class CCriwareCrypt
     /// <summary>
     /// Helper to stream data from Input to Output while decrypting.
     /// </summary>
-    public static void ProcessStream(Stream input, Stream output, uint key)
+    public static void ProcessStream(Stream input, Stream output, uint key, Action<long, long>? onProgress = null)
     {
         byte[] buffer = new byte[1024 * 1024]; // 1MB Chunk
         int bytesRead;
         long totalRead = 0;
+        long totalLength = input.Length;
 
         while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
         {
@@ -111,6 +112,7 @@ public static class CCriwareCrypt
             }
             
             totalRead += bytesRead;
+            onProgress?.Invoke(totalRead, totalLength);
         }
     }
 

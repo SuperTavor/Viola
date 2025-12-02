@@ -20,6 +20,21 @@ class CPack
 
     public void PackMod()
     {
+        if (_options.ClearOutputBeforePack && Directory.Exists(_options.OutputPath))
+        {
+            CLogger.LogInfo("Clearing output folder...");
+            try
+            {
+                var dirInfo = new DirectoryInfo(_options.OutputPath);
+                foreach (var file in dirInfo.GetFiles()) file.Delete();
+                foreach (var dir in dirInfo.GetDirectories()) dir.Delete(true);
+            }
+            catch (Exception ex)
+            {
+                CLogger.AddImportantInfo($"Failed to clear output folder: {ex.Message}");
+            }
+        }
+
         string cpkListInputPath = string.IsNullOrEmpty(_options.CpkListPath)
             ? Path.Combine(_dirToPack, "data", "cpk_list.cfg.bin").Replace("\\", "/")
             : _options.CpkListPath;
@@ -70,9 +85,14 @@ class CPack
         
         Entry? templateEntry = cpkItems.Count > 0 ? cpkItems[cpkItems.Count - 1] : null;
 
+        int processedCount = 0;
+        int totalFiles = localFiles.Count;
+
         foreach (var file in localFiles)
         {
-            // Skip the config file itself if it's in the list
+            processedCount++;
+            CGeneralUtils.ReportProgress(processedCount, totalFiles, "Updating Config");
+
             if (file.EndsWith("cpk_list.cfg.bin", StringComparison.OrdinalIgnoreCase)) continue;
 
             string relativePath = Path.GetRelativePath(_dirToPack, file).Replace("\\", "/");
@@ -91,7 +111,6 @@ class CPack
             }
             else
             {
-                // --- ADD NEW ---
                 CLogger.LogInfo($"[Add] {relativePath}");
 
                 if (templateEntry == null)
@@ -156,14 +175,25 @@ class CPack
             }
         }
 
+        long totalFilesToCopy = filesToCopy.Count;
+        long copiedCount = 0;
+        object lockObj = new object();
+
         Parallel.ForEach(filesToCopy, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, file =>
         {
             string relative = Path.GetRelativePath(_dirToPack, file);
             string destPath = Path.Combine(destRoot, relative);
             
             File.Copy(file, destPath, true);
+
+            lock (lockObj)
+            {
+                copiedCount++;
+                CGeneralUtils.ReportProgress(copiedCount, totalFilesToCopy, "Copying Files");
+            }
         });
 
+        CGeneralUtils.ReportProgress(0, 0, "");
         CLogger.LogInfo($"Done packing to `{outputModFolder.Replace("\\", "/")}`");
     }
 }

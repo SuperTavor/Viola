@@ -9,9 +9,8 @@ public class CLaunchOptions
     public string OutputPath { get; set; }
     public string HashCachePath { get; set; }
     public string CpkListPath { get; set; }
+    public bool ClearOutputBeforePack { get; set; }
 
-    //for the enc command
-    public uint Key = 0;
     //for the merge command
     public List<string> StuffToMerge = new();
 }

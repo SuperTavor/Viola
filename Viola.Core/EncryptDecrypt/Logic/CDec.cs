@@ -1,51 +1,55 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text;
-using Viola.Core.EncryptDecrypt.Logic.Utils;
+﻿using Viola.Core.EncryptDecrypt.Logic.Utils;
 using Viola.Core.Launcher.DataClasses;
 using Viola.Core.ViolaLogger.Logic;
+using Viola.Core.Utils.General.Logic;
 
 namespace Viola.Core.EncryptDecrypt.Logic
 {
     public class CDec
     {
-        private MemoryStream _ms;
         private string _outputPath;
         private string _inputPath;
-        private Dictionary<string, byte[]> ExtensionToHeader = new()
-        {
-            {".cpk",Encoding.UTF8.GetBytes("CPK ")},
-            {".usm",Encoding.UTF8.GetBytes("CRID")},
-            {".acb",Encoding.UTF8.GetBytes("@UTF")},
-            {".awb",Encoding.UTF8.GetBytes("AFS2")},
-            {".acf",Encoding.UTF8.GetBytes("@UTF")}
-        };
+
         public CDec(CLaunchOptions options)
         {
             _inputPath = options.InputPath;
             _outputPath = options.OutputPath;
-            _ms = new(File.ReadAllBytes(_inputPath));
         }
 
         public void Decrypt()
         {
-            var extension = Path.GetExtension(_inputPath);
-            byte[] header;
+            var filename = Path.GetFileName(_inputPath);
+
+            // Calculate Key based on filename
+            uint key = CCriwareCrypt.CalculateFilenameKey(filename);
+
+            CLogger.LogInfo($"Decrypting {filename} with Key: {key:X8}...");
+
             try
             {
-                header = ExtensionToHeader[extension];
+                using (var fsIn = new FileStream(_inputPath, FileMode.Open, FileAccess.Read))
+                using (var fsOut = new FileStream(_outputPath, FileMode.Create, FileAccess.Write))
+                {
+                    long lastUpdateTick = 0;
+                    CCriwareCrypt.ProcessStream(fsIn, fsOut, key, (curr, tot) =>
+                    {
+                        long now = DateTime.Now.Ticks;
+                        if (now - lastUpdateTick > 500000) // 50ms throttle
+                        {
+                            CGeneralUtils.ReportProgress(curr, tot, "Decrypting");
+                            lastUpdateTick = now;
+                        }
+                    });
+                    CGeneralUtils.ReportProgress(100, 100, "Decrypting");
+                }
+                
+                CLogger.LogInfo($"Finished decrypting to `{_outputPath.Replace("\\", "/")}`");
             }
-            catch
+            catch (Exception ex)
             {
-                CLogger.AddImportantInfo($"Unsupported file extension for decryption: {extension}");
-                return;
+                CLogger.AddImportantInfo($"Decryption Error: {ex.Message}");
             }
-            var cryptor = new CCriwareCrypt(_ms ,CriwareCryptMode.Decrypt, ExtensionToHeader[extension]);
-            cryptor.DecryptFile();
-            //Write file
-            File.WriteAllBytes(_outputPath,_ms.ToArray());
-            //Close the input ms
-            _ms.Close();
-            CLogger.LogInfo($"**Finished decrypting! PLEASE REMEMBER THIS KEY IF YOU WANT TO RE-ENCRYPT THE FILE: {BitConverter.ToUInt32(cryptor.Key)}**\n");
+            CGeneralUtils.ReportProgress(0, 0, "");
         }
     }
 }

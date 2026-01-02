@@ -44,29 +44,13 @@ class CCLI
             //Get compilation target
             var platform = reader.ReadOption("p|platform");
             if (platform == null) ShowUsageAndExit();
+            #pragma warning disable CS8602 // Dereference of a possibly null reference.
             if (Enum.TryParse(platform.Trim().ToUpper(), out Platform plat))
             {
                 options.PackPlatform = plat;
             }
             else ShowUsageAndExit();
-        }
-        //Get encryption key
-        if (options.Mode == Mode.Encrypt)
-        {
-            var key = reader.ReadOption("k|key");
-            if (key == null) ShowUsageAndExit();
-            else
-            {
-                try
-                {
-                    options.Key = uint.Parse(key);
-                }
-                catch
-                {
-                    Console.WriteLine("Please enter a valid uint as the key.");
-                    Environment.Exit(1);
-                }
-            }
+            #pragma warning restore CS8602 // Dereference of a possibly null reference.
         }
         options.StuffToMerge = reader.ReadArguments().ToList();
         try

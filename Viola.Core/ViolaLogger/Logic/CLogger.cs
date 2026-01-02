@@ -45,11 +45,11 @@ namespace Viola.Core.ViolaLogger.Logic
             //Meaning CLI mode is enabled
             if (GuiLogInfoEvent == null)
             {
-                Console.Write(msg);
+                Console.WriteLine(msg);
             }
             else
             {
-                GuiLogInfoEvent(msg);
+                GuiLogInfoEvent(msg+"\n");
             }
         }
         public static void InvokeImportantInfos()

@@ -1,77 +1,130 @@
 using System.Text;
+
 namespace Viola.Core.EncryptDecrypt.Logic.Utils;
-public class CCriwareCrypt
+
+public static class CCriwareCrypt
 {
-    public byte[]? Key;
-    private MemoryStream _ms;
-    private byte[] _originalMagic;
-    //Key specification is only required when encrypting.
-    public CCriwareCrypt(MemoryStream ms, CriwareCryptMode mode, byte[]? originalMagic = null, uint? key = null)
+    private static uint[]? _crc32Table;
+
+    // Standard CRC32 Polynomial: 0xEDB88320
+    private static void InitializeTable()
     {
-        _ms = ms;
-        if (mode == CriwareCryptMode.Decrypt)
+        if (_crc32Table != null) return;
+        _crc32Table = new uint[256];
+        uint polynomial = 0xEDB88320;
+        for (uint i = 0; i < 256; i++)
         {
-            if (originalMagic == null)
+            uint crc = i;
+            for (uint j = 8; j > 0; j--)
             {
-                throw new ArgumentException("Please specify the original magic when decrypting using the CriwareCrypt class.");
+                if ((crc & 1) == 1) crc = (crc >> 1) ^ polynomial;
+                else crc >>= 1;
             }
-            else
-            {
-                _originalMagic = originalMagic;
-            }
-            GenerateKeyFromFileHeader();
-        }
-        else if (mode == CriwareCryptMode.Encrypt)
-        {
-            if (key == null)
-            {
-                throw new ArgumentException("Please specify the key when encrypting using the CriwareCrypt class.");
-            }
-            else
-            {
-                Key = BitConverter.GetBytes(key.Value);
-            }
-        }
-    }
-    public void GenerateKeyFromFileHeader()
-    {
-        byte[] headerBytes = new byte[4];
-        _ms.Read(headerBytes, 0, 4);
-        //XOR header bytes with the magic to get the key
-        Key = new byte[4];
-        for (int i = 0; i < _originalMagic.Length; i++)
-        {
-            Key[i] = (byte)(_originalMagic[i] ^ headerBytes[i]);
+            _crc32Table[i] = crc;
         }
     }
 
-    public void DecryptFile()
+    /// <summary>
+    /// Calculates the decryption key based on the filename.
+    /// </summary>
+    public static uint CalculateFilenameKey(string filename)
     {
-        byte[] data = _ms.ToArray();
-        for (int i = 0; i < data.Length; i++)
+        InitializeTable();
+        
+        // Game uses Standard Seed 0xFFFFFFFF
+        uint crc = 0xFFFFFFFF; 
+        
+        byte[] bytes = Encoding.UTF8.GetBytes(filename);
+        
+        foreach (byte b in bytes)
         {
-            data[i] ^= Key![i % Key.Length];
+            byte index = (byte)((crc ^ b) & 0xFF);
+            crc = (crc >> 8) ^ _crc32Table![index];
         }
-        if (!data.Take(4).ToArray().SequenceEqual(_originalMagic))
-        {
-            throw new FormatException("File does not match the specified format");
-        }
-        _ms.Position = 0;
-        _ms.Write(data, 0, data.Length);
-        _ms.SetLength(data.Length);
-        _ms.Position = 0;
+        
+        return ~crc; 
     }
 
-    public void EncryptFile()
+    /// <summary>
+    /// Core decryption logic for a byte array.
+    /// </summary>
+    public static void DecryptBlock(byte[] buffer, long fileOffset, uint key)
     {
-        byte[] data = _ms.ToArray();
-        for (int i = 0; i < data.Length; i++)
+        InitializeTable();
+
+        byte[] KEY = BitConverter.GetBytes(key);
+        
+        // Initialize Rolling CRC State using the Offset (Salt)
+        uint currentCrc = UpdateCrcState((uint)(fileOffset & -4), KEY);
+
+        for (int i = 0; i < buffer.Length; i++)
         {
-            data[i] ^= Key![i % Key.Length];
+            long globalPos = i + fileOffset;
+            
+            if ((globalPos & 3) == 0) 
+            {
+                currentCrc = UpdateCrcState((uint)globalPos, KEY);
+            }
+
+            // Bit Scrambler Logic
+            int baseShift = (int)(globalPos & 3) * 2; 
+
+            uint r8 = (currentCrc >> (baseShift + 8)) & 3;
+            uint rdx = (currentCrc >> baseShift) & 0xFF; 
+            uint mask = (rdx << 2) & 0xFF; 
+            r8 |= mask;
+
+            rdx = (currentCrc >> (baseShift + 16)) & 3;
+            mask = (r8 << 2) & 0xFF; 
+            r8 = mask | rdx;
+
+            rdx = (currentCrc >> (baseShift + 24)) & 3;
+            mask = (r8 << 2) & 0xFF; 
+            r8 = mask | rdx;
+
+            buffer[i] ^= (byte)r8;
         }
-        _ms.Position = 0;
-        _ms.Write(data, 0, data.Length);
-        _ms.SetLength(data.Length);
-        _ms.Position = 0;
+    }
+
+    /// <summary>
+    /// Helper to stream data from Input to Output while decrypting.
+    /// </summary>
+    public static void ProcessStream(Stream input, Stream output, uint key, Action<long, long>? onProgress = null)
+    {
+        byte[] buffer = new byte[1024 * 1024]; // 1MB Chunk
+        int bytesRead;
+        long totalRead = 0;
+        long totalLength = input.Length;
+
+        while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            if (bytesRead < buffer.Length)
+            {
+                byte[] partial = new byte[bytesRead];
+                Array.Copy(buffer, partial, bytesRead);
+                DecryptBlock(partial, totalRead, key);
+                output.Write(partial, 0, bytesRead);
+            }
+            else
+            {
+                DecryptBlock(buffer, totalRead, key);
+                output.Write(buffer, 0, bytesRead);
+            }
+            
+            totalRead += bytesRead;
+            onProgress?.Invoke(totalRead, totalLength);
+        }
+    }
+
+    private static uint UpdateCrcState(uint seed, byte[] keys)
+    {
+        uint crc = ~seed;
+        for(int k=0; k<4; k++)
+        {
+            byte index = (byte)(crc & 0xFF);
+            index ^= keys[k];
+            crc = (crc >> 8) ^ _crc32Table![index];
+        }
+        return ~crc;
     }
 }

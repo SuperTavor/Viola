@@ -3,108 +3,197 @@ using Tinifan.Level5.Binary.Logic;
 using Viola.Core.Launcher.DataClasses;
 using Viola.Core.Utils.General.Logic;
 using Viola.Core.ViolaLogger.Logic;
+using Viola.Core.EncryptDecrypt.Logic.Utils;
 
 namespace Viola.Core.Pack.Logic;
+
 class CPack
 {
-    private CLaunchOptions _options { get; set; }
-    private string _dirToPack = string.Empty;
+    private readonly CLaunchOptions _options;
+    private readonly string _dirToPack;
+
     public CPack(CLaunchOptions options)
     {
         _options = options;
-        _dirToPack = _options.InputPath!.Replace("\\", "/");
-    }
-
-    bool CheckForCpkList(List<string> modFiles)
-    {
-        return modFiles.Contains($"{_dirToPack}/data/cpk_list.cfg.bin");
-    }
-
-    List<string> CollectModPaths()
-    {
-        return CGeneralUtils.GetAllFilesWithNormalSlash(_dirToPack);
+        _dirToPack = Path.TrimEndingDirectorySeparator(_options.InputPath!.Replace("\\", "/"));
     }
 
     public void PackMod()
     {
-        var recFilesInPackDir = CollectModPaths();
-        string cpkListPath;
-        if (_options.CpkListPath == string.Empty) cpkListPath = $"{_dirToPack}/data/cpk_list.cfg.bin";
-        else cpkListPath = _options.CpkListPath;
-        if (!File.Exists(cpkListPath))
+        if (_options.ClearOutputBeforePack && Directory.Exists(_options.OutputPath))
         {
-            CLogger.AddImportantInfo($"Can't find your selected cpk_list file. If you chose to use the default cpk_list file, make sure it's in <your_mod_directory>/data/cpk_list.cfg.bin");
+            CLogger.LogInfo("Clearing output folder...");
+            try
+            {
+                var dirInfo = new DirectoryInfo(_options.OutputPath);
+                foreach (var file in dirInfo.GetFiles()) file.Delete();
+                foreach (var dir in dirInfo.GetDirectories()) dir.Delete(true);
+            }
+            catch (Exception ex)
+            {
+                CLogger.AddImportantInfo($"Failed to clear output folder: {ex.Message}");
+            }
+        }
+
+        string cpkListInputPath = string.IsNullOrEmpty(_options.CpkListPath)
+            ? Path.Combine(_dirToPack, "data", "cpk_list.cfg.bin").Replace("\\", "/")
+            : _options.CpkListPath;
+
+        if (!File.Exists(cpkListInputPath))
+        {
+            CLogger.AddImportantInfo($"Can't find master config at: {cpkListInputPath}");
             return;
         }
-        byte[] cpklistBytes = File.ReadAllBytes(cpkListPath);
-        CfgBin cpkList = new CfgBin();
-        cpkList.Open(cpklistBytes);
-        //get all CPK_ITEM entries
-        List<Entry> cpkItems = cpkList.Entries[0].Children;
-        //Get all files already registered in the cpklist.
-        HashSet<string> alreadyRegisteredFiles = new HashSet<string>();
-        foreach (var cpkItem in cpkItems)
+
+        CLogger.LogInfo("Processing cpk_list.cfg.bin...");
+
+        byte[] fileBytes = File.ReadAllBytes(cpkListInputPath);
+        bool wasEncrypted = false;
+
+        uint checkHeader = BitConverter.ToUInt32(fileBytes, 0);
+        if (checkHeader > 10000000)
         {
-            //Add fileName field from each entry.
-            alreadyRegisteredFiles.Add(_dirToPack + "/" + (string)cpkItem.Variables[0].Value);
+            wasEncrypted = true;
+            CLogger.LogInfo("Decrypting config...");
+            CCriwareCrypt.DecryptBlock(fileBytes, 0, 0x1717E18E);
         }
-        //store all the filenames of changed files so we can copy later
-        HashSet<string> modifiedOrAddedFiles = [];
+
+        CfgBin cpkList = new CfgBin();
+        cpkList.Open(fileBytes);
+
+        if (cpkList.Entries.Count == 0 || cpkList.Entries[0].Children == null)
+        {
+            CLogger.AddImportantInfo("Invalid CfgBin structure: No entries found.");
+            return;
+        }
+
+        List<Entry> cpkItems = cpkList.Entries[0].Children;
+
+        Dictionary<string, int> existingFileMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
         for (int i = 0; i < cpkItems.Count; i++)
         {
-            var fileNameInCfgBin = (string)cpkItems[i].Variables[0].Value;
-            //This should create a full path of the file specified in the enbtry
-            var modfile = $"{_dirToPack}/{fileNameInCfgBin}";
+            var item = cpkItems[i];
+            string dir = (string)item.Variables[0].Value;
+            string name = (string)item.Variables[1].Value;
+            string fullPath = dir + name; // already contains / from game data
 
-            if (File.Exists(modfile))
-            {
-                CLogger.LogInfo($"[modified file] {fileNameInCfgBin}\n");
-                //make the file loose
-                cpkItems[i].Variables[1].Value = string.Empty;
-                //adjust the size to the modded file's size
-                cpkItems[i].Variables[2].Value = (int)new FileInfo(modfile).Length;
-                modifiedOrAddedFiles.Add(modfile);
-            }
-
+            existingFileMap[fullPath] = i;
         }
-        foreach (var file in recFilesInPackDir)
+
+        var localFiles = CGeneralUtils.GetAllFilesWithNormalSlash(_dirToPack);
+        
+        Entry? templateEntry = cpkItems.Count > 0 ? cpkItems[cpkItems.Count - 1] : null;
+
+        int processedCount = 0;
+        int totalFiles = localFiles.Count;
+
+        foreach (var file in localFiles)
         {
-            //Get all the new files
-            if (!alreadyRegisteredFiles.Contains(file) && file != $"{_dirToPack}/data/cpk_list.cfg.bin" && File.Exists(file))
+            processedCount++;
+            CGeneralUtils.ReportProgress(processedCount, totalFiles, "Updating Config");
+
+            if (file.EndsWith("cpk_list.cfg.bin", StringComparison.OrdinalIgnoreCase)) continue;
+
+            string relativePath = Path.GetRelativePath(_dirToPack, file).Replace("\\", "/");
+            int size = (int)new FileInfo(file).Length;
+
+            if (existingFileMap.TryGetValue(relativePath, out int entryIndex))
             {
-                var relativePath = Path.GetRelativePath(_dirToPack, file).Replace("\\", "/");
-                CLogger.LogInfo($"[new file] {relativePath}\n");
-                modifiedOrAddedFiles.Add(file);
-                //dupe the last entry and fill in our values
-                var newEntry = cpkItems.Last().Clone();
-                newEntry.Variables[0].Value = Path.GetRelativePath(_dirToPack, file).Replace("\\", "/");
-                newEntry.Variables[1].Value = string.Empty;
-                newEntry.Variables[2].Value = (int)new FileInfo(file).Length;
+                CLogger.LogInfo($"[Update] {relativePath}");
+                
+                var entry = cpkItems[entryIndex];
+                
+                // Update for Loose File Mode
+                entry.Variables[2].Value = ""; // Clear CPK Dir
+                entry.Variables[3].Value = ""; // Clear CPK Name
+                entry.Variables[4].Value = size; // Update Size
+            }
+            else
+            {
+                CLogger.LogInfo($"[Add] {relativePath}");
+
+                if (templateEntry == null)
+                {
+                    CLogger.AddImportantInfo("Cannot add new files: CfgBin entry list is empty, no template available.");
+                    continue; 
+                }
+
+                string fileName = Path.GetFileName(relativePath);
+                string dirName = Path.GetDirectoryName(relativePath)?.Replace("\\", "/") ?? "";
+                if (!string.IsNullOrEmpty(dirName) && !dirName.EndsWith("/")) dirName += "/";
+
+                Entry newEntry = templateEntry.Clone();
+
+                newEntry.Variables[0].Value = dirName;
+                newEntry.Variables[1].Value = fileName;
+                newEntry.Variables[2].Value = ""; 
+                newEntry.Variables[3].Value = ""; 
+                newEntry.Variables[4].Value = size;
+
                 cpkItems.Add(newEntry);
             }
         }
-        var outputModFolder = _options.OutputPath;
-        //create path to the mod output folder, unless it already exists.
-        Directory.CreateDirectory(outputModFolder);
-        //Set updated entry count if files were added
-        cpkList.Entries[0].Variables[0].Value = cpkItems.Count;
-        //replace the basegame cpklist with the stuff from our cpklist
-        cpkList.Entries[0].Children = cpkItems;
-        string outputCpkListPath = "";
-        if(_options.PackPlatform == DataClasses.Platform.SWITCH)
-            outputCpkListPath = $"{outputModFolder}/romfs/data/cpk_list.cfg.bin";
-        else outputCpkListPath = $"{outputModFolder}/data/cpk_list.cfg.bin";
-        Directory.CreateDirectory(Path.GetDirectoryName(outputCpkListPath)!);
-        File.WriteAllBytes(outputCpkListPath, cpkList.Save());
 
-        foreach (var file in modifiedOrAddedFiles)
+        cpkList.Entries[0].Variables[0].Value = cpkItems.Count;
+
+        string outputModFolder = _options.OutputPath;
+        string outputConfigPath = (_options.PackPlatform == DataClasses.Platform.SWITCH)
+            ? Path.Combine(outputModFolder, "romfs", "data", "cpk_list.cfg.bin")
+            : Path.Combine(outputModFolder, "data", "cpk_list.cfg.bin");
+
+        outputConfigPath = outputConfigPath.Replace("\\", "/");
+        Directory.CreateDirectory(Path.GetDirectoryName(outputConfigPath)!);
+
+        byte[] savedBytes = cpkList.Save();
+
+        if (wasEncrypted)
         {
-            string destFilePath = "";
-            if(_options.PackPlatform == DataClasses.Platform.PC)
-                destFilePath = $"{outputModFolder}/{Path.GetRelativePath(_dirToPack, file)}";
-            else destFilePath = $"{outputModFolder}/romfs/{Path.GetRelativePath(_dirToPack, file)}";
-            Directory.CreateDirectory(Path.GetDirectoryName(destFilePath)!);
-            File.Copy(file, destFilePath, true);
+            CLogger.LogInfo("Re-encrypting config...");
+            CCriwareCrypt.DecryptBlock(savedBytes, 0, 0x1717E18E);
         }
+
+        File.WriteAllBytes(outputConfigPath, savedBytes);
+
+        CLogger.LogInfo("Copying files...");
+
+        string destRoot = (_options.PackPlatform == DataClasses.Platform.SWITCH)
+             ? Path.Combine(outputModFolder, "romfs")
+             : outputModFolder;
+
+        var filesToCopy = localFiles.Where(f => !f.EndsWith("data/cpk_list.cfg.bin", StringComparison.OrdinalIgnoreCase)).ToList();
+
+        var distinctDirectories = filesToCopy
+            .Select(f => Path.GetDirectoryName(Path.Combine(destRoot, Path.GetRelativePath(_dirToPack, f))))
+            .Distinct();
+
+        foreach (var dir in distinctDirectories)
+        {
+            if (dir != null && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+        }
+
+        long totalFilesToCopy = filesToCopy.Count;
+        long copiedCount = 0;
+        object lockObj = new object();
+
+        Parallel.ForEach(filesToCopy, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, file =>
+        {
+            string relative = Path.GetRelativePath(_dirToPack, file);
+            string destPath = Path.Combine(destRoot, relative);
+            
+            File.Copy(file, destPath, true);
+
+            lock (lockObj)
+            {
+                copiedCount++;
+                CGeneralUtils.ReportProgress(copiedCount, totalFilesToCopy, "Copying Files");
+            }
+        });
+
+        CGeneralUtils.ReportProgress(0, 0, "");
+        CLogger.LogInfo($"Done packing to `{outputModFolder.Replace("\\", "/")}`");
     }
 }

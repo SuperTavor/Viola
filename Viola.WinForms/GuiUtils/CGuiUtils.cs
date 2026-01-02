@@ -9,11 +9,15 @@ namespace Viola.WinForms.GuiUtils
     public class CGuiUtils
     {
 
-        public static string ChooseFolder(string desc)
+        public static string ChooseFolder(string desc, string initialDirectory = "")
         {
             using (FolderBrowserDialog folderDialog = new FolderBrowserDialog())
             {
                 folderDialog.Description = desc;
+                if (!string.IsNullOrEmpty(initialDirectory) && Directory.Exists(initialDirectory))
+                {
+                    folderDialog.InitialDirectory = initialDirectory;
+                }
 
                 if (folderDialog.ShowDialog() == DialogResult.OK)
                 {
@@ -25,16 +29,16 @@ namespace Viola.WinForms.GuiUtils
             }
         }
 
-        public static string SaveFile(string windowTitle,string filter)
+        public static string SaveFile(string windowTitle, string filter, string initialDirectory = "")
         {
-            return ChooseFile(windowTitle, true,filter);
+            return ChooseFile(windowTitle, true, filter, initialDirectory);
         }
 
-        public static string ChooseExistingFile( string windowTitle,string fileExtension)
+        public static string ChooseExistingFile(string windowTitle, string fileExtension, string initialDirectory = "")
         {
-            return ChooseFile(windowTitle, false,fileExtension);
+            return ChooseFile(windowTitle, false, fileExtension, initialDirectory);
         }
-        public static string ChooseFile(string windowTitle, bool isSaveDialog,string filter)
+        public static string ChooseFile(string windowTitle, bool isSaveDialog, string filter, string initialDirectory = "")
         {
             if (isSaveDialog)
             {
@@ -43,6 +47,10 @@ namespace Viola.WinForms.GuiUtils
                     saveFileDialog.Title = windowTitle;
                     //Saving teh hashcache is the only time we actually save a file so it's OK to put this filter every time we save
                     saveFileDialog.Filter = filter;
+                    if (!string.IsNullOrEmpty(initialDirectory) && Directory.Exists(initialDirectory))
+                    {
+                        saveFileDialog.InitialDirectory = initialDirectory;
+                    }
 
                     if (saveFileDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -56,6 +64,10 @@ namespace Viola.WinForms.GuiUtils
                 {
                     openFileDialog.Title = windowTitle;
                     openFileDialog.Filter = filter;
+                    if (!string.IsNullOrEmpty(initialDirectory) && Directory.Exists(initialDirectory))
+                    {
+                        openFileDialog.InitialDirectory = initialDirectory;
+                    }
 
                     if (openFileDialog.ShowDialog() == DialogResult.OK)
                     {

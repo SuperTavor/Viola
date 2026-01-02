@@ -1,10 +1,10 @@
 # 💜Viola 💜 
-*Version 1.3.0*
+*Version 1.4.0*
 
 Modern LEVEL5 modding made easy!
 
 ## Special thanks to
-**onepiecefreak3** for helping me, **Tinifan** for allowing me to use his CfgBin library, and finally, **Light** and **Plasma** for testing Viola extensively!
+**onepiecefreak3** for helping me, **Tinifan** for allowing me to use his CfgBin library, and finally, **Light** and **Plasma** for testing Viola extensively, and **skythebro** for implementing the entire new encrypted CPK logic!!
 
 ## What is Viola?
 Viola is an all-in-one tool to manage, create, and analyze modern LEVEL5 games. You see, these newer LEVEL5 games all use various CPK files to store the game's files, and they keep track of which file is in which CPK in the cpk_list.cfg.bin file, along with their sizes.

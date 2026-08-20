@@ -6,6 +6,7 @@ using Viola.Core.ViolaLogger.Logic;
 using Viola.Core.EncryptDecrypt.Logic.Utils;
 using Viola.Core.Utils.Cpk.Logic;
 using Viola.Core.Utils.CpkList.Logic;
+using Viola.Core.Pack.DataClasses;
 
 namespace Viola.Core.Pack.Logic;
 
@@ -56,10 +57,10 @@ class CPack
         var localFiles = CGeneralUtils.GetAllFilesWithNormalSlash(_dirToPack);
         var userCustomPacks = FindCustomPacks(localFiles);
         string outputModFolder = _options.OutputPath;
-        string destRoot = (_options.PackPlatform == DataClasses.Platform.SWITCH)
+        string destRoot = (_options.PackPlatform == DataClasses.Platform.NintendoSwitch)
              ? Path.Combine(outputModFolder, "romfs")
              : outputModFolder;
-        string outputConfigPath = (_options.PackPlatform == DataClasses.Platform.SWITCH)
+        string outputConfigPath = (_options.PackPlatform == DataClasses.Platform.NintendoSwitch)
             ? Path.Combine(outputModFolder, "romfs", "data", "cpk_list.cfg.bin")
             : Path.Combine(outputModFolder, "data", "cpk_list.cfg.bin");
 
@@ -110,20 +111,50 @@ class CPack
         }
 
         List<Entry> cpkItems = cpkList.Entries[0].Children;
+        
+        Entry? templateEntry = cpkItems.Count > 0 ? cpkItems[cpkItems.Count - 1] : null;
+
+        //Infer cpklist structure from templateEntry variableCount
+        CpkListStructure cpkListMode;
+        switch(templateEntry.Variables.Count)
+        {
+            case CGeneralUtils.OLD_CPKLIST_CNT:
+                cpkListMode = CpkListStructure.Old;
+                break;
+            case CGeneralUtils.NEW_CPKLIST_CNT:
+                cpkListMode = CpkListStructure.New;
+                break;
+            default:
+                cpkListMode = CpkListStructure.None;
+                break;
+        }
+        if (cpkListMode == CpkListStructure.None)
+        {
+            CLogger.AddImportantInfo("Invalid CfgBin structure: Unknown entry structure.");
+            return;
+        }
 
         Dictionary<string, int> existingFileMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         for (int i = 0; i < cpkItems.Count; i++)
         {
             var item = cpkItems[i];
-            string dir = (string)item.Variables[0].Value;
-            string name = (string)item.Variables[1].Value;
-            string fullPath = dir + name; // already contains / from game data
+            string fullPath = "";
+            if(cpkListMode == CpkListStructure.New)
+            {
+                string dir = (string)item.Variables[0].Value;
+                string name = (string)item.Variables[1].Value;
+                fullPath = dir + name; // already contains / from game data
+            }
+            else
+            {
+                fullPath = (string)item.Variables[0].Value;
+            }
 
             existingFileMap[fullPath] = i;
         }
         
-        Entry? templateEntry = cpkItems.Count > 0 ? cpkItems[cpkItems.Count - 1] : null;
+
 
         int processedCount = 0;
         int totalFiles = localFiles.Count;
@@ -146,25 +177,53 @@ class CPack
                 CLogger.LogInfo($"[Update] {relativePath}");
                 
                 var entry = cpkItems[entryIndex];
-                
-                string cpkName = Convert.ToString(entry.Variables[3].Value) ?? string.Empty;
+                string cpkName = "";
+                if(cpkListMode == CpkListStructure.New)
+                {
+                    cpkName = Convert.ToString(entry.Variables[3].Value) ?? string.Empty;
+                }
+                else
+                {
+                    cpkName = Path.GetFileName((string)entry.Variables[1].Value);
+                }
                 if (autoPackedAudio.RedirectedPackNames.TryGetValue(cpkName, out var redirectedCpkName))
                 {
-                    entry.Variables[2].Value = "data/packs/";
-                    entry.Variables[3].Value = redirectedCpkName;
+                    if(cpkListMode == CpkListStructure.New)
+                    {
+                        entry.Variables[2].Value = "data/packs/";
+                        entry.Variables[3].Value = redirectedCpkName;
+                    }
+
                 }
                 else if (customPacks.Contains(cpkName))
                 {
-                    entry.Variables[2].Value = "data/packs_custom/";
-                    entry.Variables[3].Value = cpkName;
+                    if(cpkListMode == CpkListStructure.New)
+                    {
+                        entry.Variables[2].Value = "data/packs_custom/";
+                        entry.Variables[3].Value = cpkName;
+                    }
+                    else
+                    {
+                        entry.Variables[1].Value = "data/packs_custom/" + cpkName;
+                    }
                 }
                 else
                 {
                     // Update for Loose File Mode
-                    entry.Variables[2].Value = ""; // Clear CPK Dir
-                    entry.Variables[3].Value = ""; // Clear CPK Name
+                    if (cpkListMode == CpkListStructure.New)
+                    {
+                        entry.Variables[2].Value = ""; // Clear CPK Dir
+                        entry.Variables[3].Value = ""; // Clear CPK Name
+                    }
+                    else
+                    {
+                        entry.Variables[1].Value = "";
+                    }
                 }
-                entry.Variables[4].Value = size; // Update Size
+                // Update Size
+                if (cpkListMode == CpkListStructure.New)
+                    entry.Variables[4].Value = size;
+                else entry.Variables[2].Value = size;
             }
             else
             {
@@ -182,11 +241,25 @@ class CPack
 
                 Entry newEntry = templateEntry.Clone();
 
-                newEntry.Variables[0].Value = dirName;
-                newEntry.Variables[1].Value = fileName;
-                newEntry.Variables[2].Value = ""; 
-                newEntry.Variables[3].Value = ""; 
-                newEntry.Variables[4].Value = size;
+                if(cpkListMode == CpkListStructure.Old)
+                {
+                    newEntry.Variables[0].Value = dirName + fileName;
+                    newEntry.Variables[1].Value = "";
+                    newEntry.Variables[2].Value = size;
+                }
+                else if(cpkListMode == CpkListStructure.New)
+                {
+                    newEntry.Variables[0].Value = dirName; //fileDir
+                    newEntry.Variables[1].Value = fileName; //fileName
+                    newEntry.Variables[2].Value = ""; //cpkDir
+                    newEntry.Variables[3].Value = ""; //cpkName
+                    newEntry.Variables[4].Value = size; //fileSize
+                }
+                else
+                {
+
+                }
+
 
                 cpkItems.Add(newEntry);
             }

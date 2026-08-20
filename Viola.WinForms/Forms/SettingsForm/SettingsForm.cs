@@ -21,7 +21,7 @@ namespace Viola.WinForms.Forms.Settings
         {
             // Platform
             cmbPlatform.Items.Add("Ask Every Time");
-            cmbPlatform.Items.Add(Platform.SWITCH.ToString());
+            cmbPlatform.Items.Add(Platform.NintendoSwitch.ToString());
             cmbPlatform.Items.Add(Platform.PC.ToString());
 
             if (_settings.DefaultPackPlatform == null)

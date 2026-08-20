@@ -6,6 +6,8 @@ namespace Viola.Core.Utils.General.Logic;
 public class CGeneralUtils
 {
     public const string APP_VERSION = "1.5.0";
+    public const int OLD_CPKLIST_CNT = 3;
+    public const int NEW_CPKLIST_CNT = 5;
     public static bool isConsole = true;
     public static event Action<long, long, string>? OnProgress;
     private static readonly HashSet<string> JunkFileNames = new(StringComparer.OrdinalIgnoreCase)

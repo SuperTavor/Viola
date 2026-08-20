@@ -8,7 +8,7 @@ namespace Viola.Core.Pack.DataClasses
 {
     public enum Platform
     {
-        SWITCH,
+        NintendoSwitch,
         PC
     }
 }

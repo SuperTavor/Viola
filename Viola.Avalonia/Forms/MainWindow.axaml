@@ -44,7 +44,7 @@
                  BorderBrush="#000000"
                  SelectionBrush="Transparent"
                  SelectionForegroundBrush="#D0D0D0"
-                 Text="Viola Console&#x0a;">
+                 Text="[Info] Welcome to Viola. To get started, choose one of the options below!&#x0a;">
             <TextBox.Styles>
                 <Style Selector="TextBox">
                     <Setter Property="Background" Value="#000000"/>

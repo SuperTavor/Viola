@@ -14,7 +14,10 @@ public class CSettings
     public bool ClearOutputBeforePack { get; set; } = false;
     public bool SmartDump { get; set; } = false;
 
-    private static string SettingsPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
+    private static string SettingsPath => Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+    "Viola",
+    "settings.json");
 
     public static CSettings Load()
     {
@@ -37,6 +40,7 @@ public class CSettings
     public void Save()
     {
         var json = JsonConvert.SerializeObject(this, Formatting.Indented);
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath));
         File.WriteAllText(SettingsPath, json);
     }
 }

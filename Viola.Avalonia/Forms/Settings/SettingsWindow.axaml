@@ -53,7 +53,14 @@
                     <TextBox x:Name="txtVanillaCpk" Width="240"/>
                     <Button x:Name="btnBrowseVanillaCpk" Content="Browse" Width="70" Click="btnBrowseVanillaCpk_Click"/>
                 </StackPanel>
-                <CheckBox x:Name="chkClearOutput" Content="Clear Output Folder Before Packing" Foreground="White"/>
+				<StackPanel Orientation="Horizontal" Spacing="8">
+					<TextBlock Text="Lua function map:" Width="130" VerticalAlignment="Center" Foreground="White"/>
+					<TextBox x:Name="luaFuncMap" Width="240"/>
+					<Button x:Name="btnBrowseLuaFuncMap" Content="Browse" Width="70" Click="btnBrowseLuaFuncMap_Click"/>
+				</StackPanel>
+				<CheckBox x:Name="isDecompileLuaDump" Content="Decompile and deobfuscate Lua scripts on dump" Foreground="White" IsEnabled="False"/>
+				<CheckBox x:Name="isResolveLuaDump" Content="Resolve Lua hashes on dump" Foreground="White" IsChecked="True" IsEnabled="False"/>
+                <CheckBox x:Name="chkClearOutput" Content="Clear Output Folder Before Packing" Foreground="White" />
                 <CheckBox x:Name="chkSmartDump" Content="Smart Dump (Skip existing files)" Foreground="White"/>
             </StackPanel>
         </Border>

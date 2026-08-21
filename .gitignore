@@ -18,3 +18,4 @@ output
 .DS_Store
 /docs
 /Viola.Avalonia.Tests
+/Viola.WinForms/Viola.WinForms.csproj

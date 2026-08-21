@@ -72,6 +72,12 @@ namespace Viola.Avalonia.Forms.Settings
             if (!string.IsNullOrEmpty(path)) txtVanillaCpk.Text = path;
         }
 
+
+        private async void btnBrowseLuaFuncMap_Click(object? sender, RoutedEventArgs e)
+        {
+            var path = await CGuiUtils.ChooseExistingFileAsync(this, "Select Lua function map", "JSON file|*.json", txtVanillaCpk.Text ?? "");
+            if (!string.IsNullOrEmpty(path)) txtVanillaCpk.Text = path;
+        }
         private void btnSave_Click(object? sender, RoutedEventArgs e)
         {
             if (cmbPlatform.SelectedIndex == 0 || cmbPlatform.SelectedItem == null)

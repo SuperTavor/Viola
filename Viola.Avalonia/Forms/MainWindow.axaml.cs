@@ -31,7 +31,7 @@ namespace Viola.Avalonia.Forms
             _btns.Add(decryptBtn);
             _btns.Add(encryptBtn);
             _btns.Add(settingsBtn);
-            Title = $"Viola {CGeneralUtils.APP_VERSION} (GUI)";
+            Title = $"Viola {CGeneralUtils.APP_VERSION} (Avalonia)";
             CLogger.GuiLogInfoEvent += GuiLog;
             CLogger.GuiMsgBoxEvent += GuiMsgBox;
             CGeneralUtils.OnProgress += UpdateProgress;
@@ -59,13 +59,13 @@ namespace Viola.Avalonia.Forms
                 statusLabel.Text = $"{prefix}: {percentage}% ({current}/{total})";
                 statusLabel.IsVisible = true;
 
-                Title = $"Viola {CGeneralUtils.APP_VERSION} (GUI) - {prefix} {percentage}%";
+                Title = $"Viola {CGeneralUtils.APP_VERSION} (Avalonia) - {prefix} {percentage}%";
             }
             else
             {
                 progressBar.Value = 0;
                 statusLabel.Text = "";
-                Title = $"Viola {CGeneralUtils.APP_VERSION} (GUI)";
+                Title = $"Viola {CGeneralUtils.APP_VERSION} (Avalonia)";
             }
         }
 
@@ -106,8 +106,16 @@ namespace Viola.Avalonia.Forms
                 await LaunchOverride(options);
                 return;
             }
-            var launcher = new CLauncher(options);
-            await launcher.LaunchAsync();
+            try
+            {
+                var launcher = new CLauncher(options);
+                await launcher.LaunchAsync();
+            }
+            catch (Exception ex)
+            {
+                CLogger.AddImportantInfo($"An error occurred during the operation: {ex.Message}");
+                CLogger.LogInfo(ex.ToString());
+            }
         }
 
         private async Task<(bool Confirmed, Platform Output)> PickPlatformAsync()
@@ -443,8 +451,16 @@ namespace Viola.Avalonia.Forms
             }
             options.InputPath = fileToDecrypt;
             options.OutputPath = destination;
-            var launcher = new CLauncher(options);
-            await launcher.LaunchAsync();
+            try
+            {
+                var launcher = new CLauncher(options);
+                await launcher.LaunchAsync();
+            }
+            catch (Exception ex)
+            {
+                CLogger.AddImportantInfo($"An error occurred during the operation: {ex.Message}");
+                CLogger.LogInfo(ex.ToString());
+            }
             CLogger.InvokeImportantInfos();
             SensitiveAllBtns(false);
         }

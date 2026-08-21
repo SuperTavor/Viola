@@ -184,7 +184,7 @@ class CPack
                 }
                 else
                 {
-                    cpkName = Path.GetFileName((string)entry.Variables[1].Value);
+                    cpkName = Path.GetFileName((string)entry.Variables[1].Value) ?? string.Empty;
                 }
                 if (autoPackedAudio.RedirectedPackNames.TryGetValue(cpkName, out var redirectedCpkName))
                 {

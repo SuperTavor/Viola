@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="313" d:DesignHeight="160"
+        x:Class="Viola.Avalonia.Forms.ChoosePlatform.ChoosePackPlatformWindow"
+        Title="Choose pack platform"
+        Width="313"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="#333333">
+    <Window.Styles>
+        <Style Selector="Button">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="White"/>
+        </Style>
+    </Window.Styles>
+    <StackPanel Margin="16" Spacing="12">
+        <TextBlock Text="Choose target platform for your mod" FontSize="14" FontWeight="Bold" TextWrapping="Wrap" Foreground="White"/>
+        <ComboBox x:Name="cmbPlatform" HorizontalAlignment="Stretch"/>
+		<Button x:Name="submitBtn"
+				Content="Submit"
+				HorizontalAlignment="Center"
+				HorizontalContentAlignment="Center"
+				VerticalContentAlignment="Center"
+				Width="154"
+				Height="46"
+				FontSize="14"
+				FontWeight="Bold"
+				Click="submitBtn_Click"/>
+	</StackPanel>
+</Window>

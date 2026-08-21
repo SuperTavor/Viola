@@ -16,3 +16,5 @@ tests
 .vs
 output
 .DS_Store
+/docs
+/Viola.Avalonia.Tests

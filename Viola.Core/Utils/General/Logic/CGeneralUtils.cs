@@ -5,7 +5,7 @@ using System.Text;
 namespace Viola.Core.Utils.General.Logic;
 public class CGeneralUtils
 {
-    public const string APP_VERSION = "1.5.0";
+    public const string APP_VERSION = "2.0.0";
     public const int OLD_CPKLIST_CNT = 3;
     public const int NEW_CPKLIST_CNT = 5;
     public static bool isConsole = true;

@@ -24,9 +24,14 @@ namespace Viola.WinForms.Forms.MainForm
             this.Text = $"Viola {CGeneralUtils.APP_VERSION} (GUI)";
             //to display all logs to the gui console
             CLogger.GuiLogInfoEvent += GuiLog;
+            CLogger.GuiMsgBoxEvent += GuiMsgBox;
             CGeneralUtils.OnProgress += UpdateProgress;
         }
 
+        private void GuiMsgBox(string message)
+        {
+            MessageBox.Show(message, "Viola");
+        }
         private void UpdateProgress(long current, long total, string prefix)
         {
             if (progressBar.InvokeRequired)

@@ -21,13 +21,9 @@ namespace Viola.Core.ViolaLogger.Logic
     }
     public static class CLogger
     {
-        //Using the Windows API directly to avoid complications with creating multiple WinForms helper projects
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
-        public static void ShowMessage(string message)
-        {
-            MessageBox(IntPtr.Zero, message, "Viola", 0);
-        }
+        //Function to execute when you would show a messagebox. Null in CLI mode
+        public static event Action<string>? GuiMsgBoxEvent = null;
+
         //Viola console rich text box buffer. Null in CLI mode
         public static event Action<string>? GuiLogInfoEvent = null;
         private static List<string>? _importantInfos;
@@ -58,13 +54,13 @@ namespace Viola.Core.ViolaLogger.Logic
             foreach(var info in _importantInfos)
             {
                 //Meaning CLI mode is enabled
-                if (GuiLogInfoEvent == null)
+                if (GuiMsgBoxEvent == null)
                 {
                     Console.Write(info);
                 }
                 else
                 {
-                    ShowMessage(info);
+                    GuiMsgBoxEvent(info);
                 }
             }
 

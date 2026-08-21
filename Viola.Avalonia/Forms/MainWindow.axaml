@@ -1,0 +1,101 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="766" d:DesignHeight="433"
+        x:Class="Viola.Avalonia.Forms.MainWindow"
+        Title="Viola"
+        Width="766" Height="433"
+        MinWidth="766" MinHeight="433"
+        WindowStartupLocation="CenterScreen"
+        CanResize="False"
+        Background="#333333">
+    <Window.Styles>
+        <Style Selector="Button">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="TextBlock.Foreground" Value="White"/>
+        </Style>
+    </Window.Styles>
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBox x:Name="consoleTextBox"
+                 Grid.Row="0"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 FontFamily="Segoe UI"
+                 FontWeight="SemiBold"
+                 Background="#000000"
+                 Foreground="#D0D0D0"
+                 BorderBrush="#000000"
+                 SelectionBrush="Transparent"
+                 SelectionForegroundBrush="#D0D0D0"
+                 Text="Viola Console&#x0a;">
+            <TextBox.Styles>
+                <Style Selector="TextBox">
+                    <Setter Property="Background" Value="#000000"/>
+                    <Setter Property="BorderBrush" Value="#000000"/>
+                </Style>
+                <Style Selector="TextBox:pointerover">
+                    <Setter Property="Background" Value="#000000"/>
+                    <Setter Property="BorderBrush" Value="#000000"/>
+                    <Setter Property="SelectionBrush" Value="Transparent"/>
+                </Style>
+                <Style Selector="TextBox:focus">
+                    <Setter Property="Background" Value="#000000"/>
+                    <Setter Property="BorderBrush" Value="#000000"/>
+                    <Setter Property="SelectionBrush" Value="Transparent"/>
+                </Style>
+            </TextBox.Styles>
+        </TextBox>
+
+        <TextBlock x:Name="statusLabel"
+                   Grid.Row="1"
+                   Margin="0,4,0,0"
+                   FontWeight="Bold"
+                   Foreground="White"
+                   IsVisible="False"/>
+
+        <ProgressBar x:Name="progressBar"
+                     Grid.Row="2"
+                     Height="15"
+                     Margin="0,4,0,4"
+                     Minimum="0" Maximum="100"/>
+
+        <StackPanel Grid.Row="3" Margin="0,4,0,0" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button x:Name="packBtn" Content="Pack" Width="154" Height="70" FontSize="16" FontWeight="Bold" Click="packBtn_Click"/>
+            <Button x:Name="dumpBtn" Content="Dump" Width="154" Height="70" FontSize="16" FontWeight="Bold" Click="dumpBtn_Click" Margin="10,0,0,0"/>
+            <Button x:Name="mergeBtn" Content="Merge" Width="154" Height="70" FontSize="16" FontWeight="Bold" Click="mergeBtn_Click" Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="4" Margin="0,10,0,0" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button x:Name="encryptBtn" Content="Encrypt Criware" Width="154" Height="70" FontSize="16" FontWeight="Bold" Click="encryptBtn_Click"/>
+            <Button x:Name="decryptBtn" Content="Decrypt Criware" Width="154" Height="70" FontSize="16" FontWeight="Bold" Click="decryptBtn_Click" Margin="10,0,0,0"/>
+            <Button x:Name="settingsBtn" Content="Settings" Width="154" Height="70" FontSize="16" FontWeight="Bold" Click="settingsBtn_Click" Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <Button Grid.Row="5" x:Name="quickStartLink"
+                Margin="0,10,0,0"
+                HorizontalAlignment="Center"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Cursor="Hand"
+                Click="QuickStartLink_OnClick">
+            <TextBlock Text="Quickstart guide" Foreground="#C0FFC0" TextDecorations="Underline"/>
+        </Button>
+    </Grid>
+</Window>

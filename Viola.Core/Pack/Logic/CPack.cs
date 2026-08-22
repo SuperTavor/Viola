@@ -255,23 +255,22 @@ class CPack
                     newEntry.Variables[3].Value = ""; //cpkName
                     newEntry.Variables[4].Value = size; //fileSize
                 }
-                else
-                {
-
-                }
-
+   
 
                 cpkItems.Add(newEntry);
             }
         }
-
-        var sortedCpkItems = cpkItems
-            .OrderBy(item => CCpkListUtils.GetCpkListEntryIndex(
-                (Convert.ToString(item.Variables[0].Value) ?? string.Empty) +
-                (Convert.ToString(item.Variables[1].Value) ?? string.Empty)))
-            .ToList();
-        cpkItems.Clear();
-        cpkItems.AddRange(sortedCpkItems);
+        
+        if(cpkListMode == CpkListStructure.New)
+        {
+            var sortedCpkItems = cpkItems
+    .OrderBy(item => CCpkListUtils.GetCpkListEntryIndex(
+        (Convert.ToString(item.Variables[0].Value) ?? string.Empty) +
+        (Convert.ToString(item.Variables[1].Value) ?? string.Empty)))
+    .ToList();
+            cpkItems.Clear();
+            cpkItems.AddRange(sortedCpkItems);
+        }
 
         cpkList.Entries[0].Variables[0].Value = cpkItems.Count;
 

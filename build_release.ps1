@@ -6,8 +6,8 @@ Write-Host "Starting Viola Release Build..." -ForegroundColor Cyan
 $RootDir = $PSScriptRoot
 $OutputDir = Join-Path $RootDir "output"
 $CliProject = Join-Path $RootDir "Viola.CLI/Viola.CLI.csproj"
-$WinFormsProject = Join-Path $RootDir "Viola.WinForms/Viola.WinForms.csproj"
-$IssFile = Join-Path $RootDir "Viola.WinForms-Setup.iss"
+$AvaloniaProject = Join-Path $RootDir "Viola.Avalonia/Viola.Avalonia.csproj"
+$IssFile = Join-Path $RootDir "Viola.Avalonia-Setup.iss"
 
 # Clean Output Directory
 if (Test-Path $OutputDir) {
@@ -25,14 +25,14 @@ if ($LASTEXITCODE -ne 0) { throw "CLI Build Failed" }
 Copy-Item (Join-Path $CliOut "Viola.CLI.exe") (Join-Path $OutputDir "Viola.CLI-Portable.exe") -Force
 Write-Host "Viola.CLI-Portable.exe created." -ForegroundColor Green
 
-# 2. Build WinForms (Portable, Framework Dependent)
-Write-Host "Building Viola.WinForms (Portable)..." -ForegroundColor Cyan
-$WinFormsOut = Join-Path $OutputDir "WinForms-Small"
-dotnet publish $WinFormsProject -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o $WinFormsOut
-if ($LASTEXITCODE -ne 0) { throw "WinForms Build Failed" }
+# 2. Build Avalonia (Portable, Framework Dependent)
+Write-Host "Building Viola.Avalonia (Portable)..." -ForegroundColor Cyan
+$WinFormsOut = Join-Path $OutputDir "Avalonia-Small"
+dotnet publish $AvaloniaProject -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o $AvaloniaOut
+if ($LASTEXITCODE -ne 0) { throw "Avalonia Build Failed" }
 
-Copy-Item (Join-Path $WinFormsOut "Viola.WinForms.exe") (Join-Path $OutputDir "Viola.WinForms-Portable.exe") -Force
-Write-Host "Viola.WinForms-Portable.exe created." -ForegroundColor Green
+Copy-Item (Join-Path $AvaloniaOut "Viola.Avalonia.exe") (Join-Path $OutputDir "Viola.Avalonia-Portable.exe") -Force
+Write-Host "Viola.Avalonia-Portable.exe created." -ForegroundColor Green
 
 # 3. Build Setup Installer
 Write-Host "Building Setup Installer..." -ForegroundColor Cyan
@@ -47,7 +47,7 @@ if (-not (Test-Path $IsccPath)) {
 & $IsccPath $IssFile
 if ($LASTEXITCODE -ne 0) { throw "Setup Creation Failed" }
 
-Write-Host "Viola.WinForms-Setup.exe created." -ForegroundColor Green
+Write-Host "Viola.Avalonia-Setup.exe created." -ForegroundColor Green
 
 # Summary
 Write-Host "`nBuild Complete! Release files are in: $OutputDir" -ForegroundColor Green

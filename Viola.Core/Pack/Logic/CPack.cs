@@ -79,7 +79,8 @@ class CPack
                     CLogger.LogInfo,
                     (current, total) => CGeneralUtils.ReportProgress(current, total, "Updating Config"),
                     autoPackedAudio.CustomPackNames,
-                    autoPackedAudio.RedirectedPackNames))
+                    autoPackedAudio.RedirectedPackNames,
+                    autoPackedAudio.CpkEntries))
             {
                 CLogger.AddImportantInfo("Failed to update modern T2B cpk_list.cfg.bin.");
                 return;
@@ -186,7 +187,18 @@ class CPack
                 {
                     cpkName = Path.GetFileName((string)entry.Variables[1].Value) ?? string.Empty;
                 }
-                if (autoPackedAudio.RedirectedPackNames.TryGetValue(cpkName, out var redirectedCpkName))
+                if (autoPackedAudio.CpkEntries.TryGetValue(relativePath, out var audioCpkPath))
+                {
+                    if (cpkListMode == CpkListStructure.New)
+                    {
+                        SetCfgBinCpkPath(entry, audioCpkPath);
+                    }
+                    else
+                    {
+                        entry.Variables[1].Value = audioCpkPath;
+                    }
+                }
+                else if (autoPackedAudio.RedirectedPackNames.TryGetValue(cpkName, out var redirectedCpkName))
                 {
                     if(cpkListMode == CpkListStructure.New)
                     {
@@ -244,7 +256,7 @@ class CPack
                 if(cpkListMode == CpkListStructure.Old)
                 {
                     newEntry.Variables[0].Value = dirName + fileName;
-                    newEntry.Variables[1].Value = "";
+                    newEntry.Variables[1].Value = autoPackedAudio.CpkEntries.GetValueOrDefault(relativePath, "");
                     newEntry.Variables[2].Value = size;
                 }
                 else if(cpkListMode == CpkListStructure.New)
@@ -254,6 +266,10 @@ class CPack
                     newEntry.Variables[2].Value = ""; //cpkDir
                     newEntry.Variables[3].Value = ""; //cpkName
                     newEntry.Variables[4].Value = size; //fileSize
+                    if (autoPackedAudio.CpkEntries.TryGetValue(relativePath, out var audioCpkPath))
+                    {
+                        SetCfgBinCpkPath(newEntry, audioCpkPath);
+                    }
                 }
    
 
@@ -384,13 +400,109 @@ class CPack
                 result.FilesByCpk.Add(cpkName, files);
             }
 
-            files.Add(new CpkFilePayload(relativePath, localFile));
+            files.Add(new CpkFilePayload(GetCpkInternalPath(relativePath), localFile, false));
             result.SourceFiles.Add(localFile);
             result.CustomPackNames.Add(cpkName);
             result.OriginalCpkPaths.TryAdd(cpkName, ResolveOriginalCpkPath(cpkPath, cpkListInputPath));
         }
 
+        var unassignedAudio = localFiles
+            .Select(localFile => (LocalFile: localFile, RelativePath: NormalizeRelativePath(Path.GetRelativePath(_dirToPack, localFile))))
+            .Where(file => IsAutoPackedAudioFile(file.RelativePath) && !cpkByPath.ContainsKey(file.RelativePath))
+            .ToList();
+
+        if (unassignedAudio.Count > 0)
+        {
+            var targetPack = FindSmallestOriginalCpk(entries, cpkListInputPath, userCustomPacks);
+            if (targetPack is null)
+            {
+                CLogger.AddImportantInfo("No original CPK could be found; new audio will use a compact custom CPK.");
+            }
+
+            string cpkName = targetPack?.Name ?? GetAvailableAudioPackName(userCustomPacks);
+            string? originalCpkPath = targetPack?.Path;
+            result.OriginalCpkPaths.TryAdd(cpkName, originalCpkPath);
+            result.CustomPackNames.Add(cpkName);
+
+            if (!result.FilesByCpk.TryGetValue(cpkName, out var files))
+            {
+                files = new List<CpkFilePayload>();
+                result.FilesByCpk.Add(cpkName, files);
+            }
+
+            foreach (var audio in unassignedAudio)
+            {
+                files.Add(new CpkFilePayload(GetCpkInternalPath(audio.RelativePath), audio.LocalFile, true));
+                result.SourceFiles.Add(audio.LocalFile);
+                result.CpkEntries[audio.RelativePath] = $"data/packs_custom/{cpkName}";
+            }
+        }
+
         return result;
+    }
+
+    private (string Name, string Path)? FindSmallestOriginalCpk(
+        IReadOnlyList<CpkListEntry> entries,
+        string cpkListInputPath,
+        IReadOnlySet<string> userCustomPacks)
+    {
+        (string Name, string Path, long Size)? smallest = null;
+
+        foreach (var cpkPath in entries
+                     .Select(entry => NormalizeRelativePath(entry.CpkPath))
+                     .Where(path => path.StartsWith("data/packs/", StringComparison.OrdinalIgnoreCase) &&
+                                    path.EndsWith(".cpk", StringComparison.OrdinalIgnoreCase))
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var cpkName = Path.GetFileName(cpkPath);
+            if (userCustomPacks.Contains(cpkName))
+            {
+                continue;
+            }
+
+            var originalPath = ResolveOriginalCpkPath(cpkPath, cpkListInputPath);
+            if (originalPath is null)
+            {
+                continue;
+            }
+
+            var candidate = (Name: cpkName, Path: originalPath, Size: new FileInfo(originalPath).Length);
+            if (smallest is null || candidate.Size < smallest.Value.Size ||
+                candidate.Size == smallest.Value.Size && StringComparer.OrdinalIgnoreCase.Compare(candidate.Name, smallest.Value.Name) < 0)
+            {
+                smallest = candidate;
+            }
+        }
+
+        return smallest is null ? null : (smallest.Value.Name, smallest.Value.Path);
+    }
+
+    private static string GetAvailableAudioPackName(IReadOnlySet<string> userCustomPacks)
+    {
+        const string baseName = "audio_custom";
+        var name = $"{baseName}.cpk";
+        var suffix = 2;
+        while (userCustomPacks.Contains(name))
+        {
+            name = $"{baseName}_{suffix++}.cpk";
+        }
+
+        return name;
+    }
+
+    private static string GetCpkInternalPath(string relativePath)
+    {
+        return relativePath.StartsWith("data/", StringComparison.OrdinalIgnoreCase)
+            ? relativePath[5..]
+            : relativePath;
+    }
+
+    private static void SetCfgBinCpkPath(Entry entry, string cpkPath)
+    {
+        var normalizedPath = cpkPath.Replace('\\', '/');
+        var cpkDirectory = Path.GetDirectoryName(normalizedPath)?.Replace('\\', '/') ?? string.Empty;
+        entry.Variables[2].Value = string.IsNullOrEmpty(cpkDirectory) ? string.Empty : $"{cpkDirectory}/";
+        entry.Variables[3].Value = Path.GetFileName(normalizedPath);
     }
 
     private static void WriteAutoPackedAudio(string destRoot, AutoPackedAudio audio)
@@ -408,13 +520,13 @@ class CPack
     {
         var tempPath = outputPath + ".tmp";
         var decryptedOriginalPath = tempPath + ".original";
+        var encryptedTempPath = tempPath + ".encrypted";
 
         if (!string.IsNullOrWhiteSpace(originalCpkPath) && File.Exists(originalCpkPath))
         {
             CLogger.LogInfo($"[Pack] Using original CPK template: {Path.GetFileName(originalCpkPath)}");
             DecryptCpkIfNeeded(originalCpkPath, decryptedOriginalPath);
-            var replacements = files.ToDictionary(file => NormalizeRelativePath(file.RelativePath), file => file.SourcePath, StringComparer.OrdinalIgnoreCase);
-            CAudioCpkRebuilder.Write(decryptedOriginalPath, tempPath, replacements, Path.GetDirectoryName(tempPath)!);
+            CAudioCpkRebuilder.Write(decryptedOriginalPath, tempPath, files, Path.GetDirectoryName(tempPath)!);
         }
         else
         {
@@ -425,10 +537,17 @@ class CPack
         try
         {
             var key = CCriwareCrypt.CalculateFilenameKey(Path.GetFileName(outputPath));
-            DeleteExistingOutput(outputPath);
             using var input = File.OpenRead(tempPath);
-            using var output = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            using var output = new FileStream(encryptedTempPath, FileMode.Create, FileAccess.Write, FileShare.None);
             CCriwareCrypt.ProcessStream(input, output, key);
+
+            if (File.Exists(outputPath))
+            {
+                CLogger.LogInfo($"[Pack] Overwriting existing CPK: {Path.GetFileName(outputPath)}");
+                File.SetAttributes(outputPath, FileAttributes.Normal);
+            }
+
+            File.Move(encryptedTempPath, outputPath, true);
         }
         finally
         {
@@ -441,19 +560,12 @@ class CPack
             {
                 File.Delete(decryptedOriginalPath);
             }
-        }
-    }
 
-    private static void DeleteExistingOutput(string outputPath)
-    {
-        if (!File.Exists(outputPath))
-        {
-            return;
+            if (File.Exists(encryptedTempPath))
+            {
+                File.Delete(encryptedTempPath);
+            }
         }
-
-        CLogger.LogInfo($"[Pack] Overwriting existing CPK: {Path.GetFileName(outputPath)}");
-        File.SetAttributes(outputPath, FileAttributes.Normal);
-        File.Delete(outputPath);
     }
 
     private static void DecryptCpkIfNeeded(string sourcePath, string targetPath)
@@ -596,6 +708,7 @@ class CPack
         public Dictionary<string, List<CpkFilePayload>> FilesByCpk { get; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, string?> OriginalCpkPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, string> RedirectedPackNames { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, string> CpkEntries { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> SourceFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> CustomPackNames { get; } = new(StringComparer.OrdinalIgnoreCase);
     }

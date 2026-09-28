@@ -93,7 +93,8 @@ public static class CCpkListUtils
         Action<string>? log = null,
         Action<int, int>? progress = null,
         IReadOnlySet<string>? additionalCustomPacks = null,
-        IReadOnlyDictionary<string, string>? redirectedPacks = null)
+        IReadOnlyDictionary<string, string>? redirectedPacks = null,
+        IReadOnlyDictionary<string, string>? additionalCpkEntries = null)
     {
         encryptedBytes = Array.Empty<byte>();
         if (!TryDecryptModern(bytes, out var decrypted) || !TryReadT2bFile(decrypted, out var file))
@@ -152,21 +153,28 @@ public static class CCpkListUtils
                 var entry = file.Entries[entryIndex];
                 entry.PendingDir = ReadT2bString(file.StringData, entry.Values[0]);
                 entry.PendingName = ReadT2bString(file.StringData, entry.Values[1]);
-                var cpkName = ReadT2bString(file.StringData, entry.Values[3]);
-                if (redirectedPacks is not null && redirectedPacks.TryGetValue(cpkName, out var redirectedCpkName))
+                if (additionalCpkEntries is not null && additionalCpkEntries.TryGetValue(relativePath, out var customCpkPath))
                 {
-                    entry.PendingCpkDir = "data/packs/";
-                    entry.PendingCpkName = redirectedCpkName;
-                }
-                else if (customPacks.Contains(cpkName))
-                {
-                    entry.PendingCpkDir = "data/packs_custom/";
-                    entry.PendingCpkName = cpkName;
+                    SetPendingCpkPath(entry, customCpkPath);
                 }
                 else
                 {
-                    entry.PendingCpkDir = string.Empty;
-                    entry.PendingCpkName = string.Empty;
+                    var cpkName = ReadT2bString(file.StringData, entry.Values[3]);
+                    if (redirectedPacks is not null && redirectedPacks.TryGetValue(cpkName, out var redirectedCpkName))
+                    {
+                        entry.PendingCpkDir = "data/packs/";
+                        entry.PendingCpkName = redirectedCpkName;
+                    }
+                    else if (customPacks.Contains(cpkName))
+                    {
+                        entry.PendingCpkDir = "data/packs_custom/";
+                        entry.PendingCpkName = cpkName;
+                    }
+                    else
+                    {
+                        entry.PendingCpkDir = string.Empty;
+                        entry.PendingCpkName = string.Empty;
+                    }
                 }
                 entry.Values[4] = size;
             }
@@ -184,8 +192,15 @@ public static class CCpkListUtils
                 var newEntry = file.Entries[templateIndex].Clone();
                 newEntry.PendingDir = dirName;
                 newEntry.PendingName = fileName;
-                newEntry.PendingCpkDir = string.Empty;
-                newEntry.PendingCpkName = string.Empty;
+                if (additionalCpkEntries is not null && additionalCpkEntries.TryGetValue(relativePath, out var customCpkPath))
+                {
+                    SetPendingCpkPath(newEntry, customCpkPath);
+                }
+                else
+                {
+                    newEntry.PendingCpkDir = string.Empty;
+                    newEntry.PendingCpkName = string.Empty;
+                }
                 newEntry.Values[4] = size;
 
                 file.Entries.Add(newEntry);
@@ -264,18 +279,35 @@ public static class CCpkListUtils
 
             foreach (var item in cpkList.Entries[0].Children)
             {
-                string dir = Convert.ToString(item.Variables[0].Value) ?? string.Empty;
-                string name = Convert.ToString(item.Variables[1].Value) ?? string.Empty;
-                string cpkDir = Convert.ToString(item.Variables[2].Value) ?? string.Empty;
-                string cpkName = Convert.ToString(item.Variables[3].Value) ?? string.Empty;
-                int size = Convert.ToInt32(item.Variables[4].Value);
-
-                entries.Add(new CpkListEntry
+                if (item.Variables.Count == CGeneralUtils.OLD_CPKLIST_CNT)
                 {
-                    FullPath = dir + name,
-                    CpkPath = BuildCpkPath(cpkDir, cpkName),
-                    Size = size
-                });
+                    entries.Add(new CpkListEntry
+                    {
+                        FullPath = Convert.ToString(item.Variables[0].Value) ?? string.Empty,
+                        CpkPath = Convert.ToString(item.Variables[1].Value) ?? string.Empty,
+                        Size = Convert.ToInt32(item.Variables[2].Value)
+                    });
+                }
+                else if (item.Variables.Count == CGeneralUtils.NEW_CPKLIST_CNT)
+                {
+                    string dir = Convert.ToString(item.Variables[0].Value) ?? string.Empty;
+                    string name = Convert.ToString(item.Variables[1].Value) ?? string.Empty;
+                    string cpkDir = Convert.ToString(item.Variables[2].Value) ?? string.Empty;
+                    string cpkName = Convert.ToString(item.Variables[3].Value) ?? string.Empty;
+                    int size = Convert.ToInt32(item.Variables[4].Value);
+
+                    entries.Add(new CpkListEntry
+                    {
+                        FullPath = dir + name,
+                        CpkPath = BuildCpkPath(cpkDir, cpkName),
+                        Size = size
+                    });
+                }
+                else
+                {
+                    entries.Clear();
+                    return false;
+                }
             }
 
             return entries.Count > 0;
@@ -622,6 +654,17 @@ public static class CCpkListUtils
 
         string cpkPath = Path.Combine(cpkDir, cpkName).Replace("\\", "/");
         return cpkPath.StartsWith("/") ? cpkPath[1..] : cpkPath;
+    }
+
+    private static void SetPendingCpkPath(T2bRawEntry entry, string cpkPath)
+    {
+        var normalizedPath = cpkPath.Replace('\\', '/');
+        entry.PendingCpkDir = Path.GetDirectoryName(normalizedPath)?.Replace('\\', '/') ?? string.Empty;
+        if (!string.IsNullOrEmpty(entry.PendingCpkDir) && !entry.PendingCpkDir.EndsWith('/'))
+        {
+            entry.PendingCpkDir += "/";
+        }
+        entry.PendingCpkName = Path.GetFileName(normalizedPath);
     }
 
     private static bool IsCustomPack(string relativePath)

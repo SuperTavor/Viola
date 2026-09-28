@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Viola.Core.Utils.Cpk.Logic;
 
-internal sealed record CpkFilePayload(string RelativePath, string SourcePath);
+internal sealed record CpkFilePayload(string RelativePath, string SourcePath, bool IsNewFile);
 
 internal static class CCriCpkWriter
 {

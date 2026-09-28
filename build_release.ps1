@@ -25,10 +25,10 @@ if ($LASTEXITCODE -ne 0) { throw "CLI Build Failed" }
 Copy-Item (Join-Path $CliOut "Viola.CLI.exe") (Join-Path $OutputDir "Viola.CLI-Portable.exe") -Force
 Write-Host "Viola.CLI-Portable.exe created." -ForegroundColor Green
 
-# 2. Build Avalonia (Portable, Framework Dependent)
+# 2. Build Avalonia (Portable, Self-Contained)
 Write-Host "Building Viola.Avalonia (Portable)..." -ForegroundColor Cyan
-$WinFormsOut = Join-Path $OutputDir "Avalonia-Small"
-dotnet publish $AvaloniaProject -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o $AvaloniaOut
+$AvaloniaOut = Join-Path $OutputDir "Avalonia-Small"
+dotnet publish $AvaloniaProject -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o $AvaloniaOut
 if ($LASTEXITCODE -ne 0) { throw "Avalonia Build Failed" }
 
 Copy-Item (Join-Path $AvaloniaOut "Viola.Avalonia.exe") (Join-Path $OutputDir "Viola.Avalonia-Portable.exe") -Force

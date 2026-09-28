@@ -27,7 +27,7 @@ Write-Host "Viola.CLI-Portable.exe created." -ForegroundColor Green
 
 # 2. Build Avalonia (Portable, Framework Dependent)
 Write-Host "Building Viola.Avalonia (Portable)..." -ForegroundColor Cyan
-$WinFormsOut = Join-Path $OutputDir "Avalonia-Small"
+$AvaloniaOut = Join-Path $OutputDir "Avalonia-Small"
 dotnet publish $AvaloniaProject -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o $AvaloniaOut
 if ($LASTEXITCODE -ne 0) { throw "Avalonia Build Failed" }
 

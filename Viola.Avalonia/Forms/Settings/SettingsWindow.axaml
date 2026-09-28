@@ -26,7 +26,6 @@
             <StackPanel Spacing="8">
                     <TextBlock Text="Default Platform:" Width="130" VerticalAlignment="Center" Foreground="White"/>
                     <ComboBox x:Name="cmbPlatform" Width="150"/>
-                </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="Dump Input:" Width="130" VerticalAlignment="Center" Foreground="White"/>
                     <TextBox x:Name="txtDumpInput" Width="240"/>

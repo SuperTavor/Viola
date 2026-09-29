@@ -42,7 +42,7 @@
                  Background="#000000"
                  Foreground="#D0D0D0"
                  BorderBrush="#000000"
-                 SelectionBrush="Transparent"
+                 SelectionBrush="#355C7D"
                  SelectionForegroundBrush="#D0D0D0"
                  Text="[Info] Welcome to Viola. To get started, choose one of the options below!&#x0a;">
             <TextBox.Styles>
@@ -53,12 +53,10 @@
                 <Style Selector="TextBox:pointerover">
                     <Setter Property="Background" Value="#000000"/>
                     <Setter Property="BorderBrush" Value="#000000"/>
-                    <Setter Property="SelectionBrush" Value="Transparent"/>
                 </Style>
                 <Style Selector="TextBox:focus">
                     <Setter Property="Background" Value="#000000"/>
                     <Setter Property="BorderBrush" Value="#000000"/>
-                    <Setter Property="SelectionBrush" Value="Transparent"/>
                 </Style>
             </TextBox.Styles>
         </TextBox>

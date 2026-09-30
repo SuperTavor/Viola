@@ -537,9 +537,11 @@ class CPack
         try
         {
             var key = CCriwareCrypt.CalculateFilenameKey(Path.GetFileName(outputPath));
-            using var input = File.OpenRead(tempPath);
-            using var output = new FileStream(encryptedTempPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            CCriwareCrypt.ProcessStream(input, output, key);
+            using (var input = File.OpenRead(tempPath))
+            using (var output = new FileStream(encryptedTempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                CCriwareCrypt.ProcessStream(input, output, key);
+            }
 
             if (File.Exists(outputPath))
             {
